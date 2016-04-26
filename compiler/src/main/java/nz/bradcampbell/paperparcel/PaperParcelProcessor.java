@@ -1,11 +1,13 @@
 package nz.bradcampbell.paperparcel;
 
 import com.google.auto.service.AutoService;
+import com.google.common.collect.ImmutableSet;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.TypeName;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.annotation.processing.AbstractProcessor;
@@ -23,14 +25,14 @@ import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
-import nz.bradcampbell.paperparcel.model.Adapter;
-import nz.bradcampbell.paperparcel.model.DataClass;
-import nz.bradcampbell.paperparcel.utils.TypeUtils;
+import nz.bradcampbell.paperparcel.model.ClassInfo;
+import nz.bradcampbell.paperparcel.typeadapters.BundleAdapter;
+import nz.bradcampbell.paperparcel.typeadapters.IntegerAdapter;
+import nz.bradcampbell.paperparcel.typeadapters.MutableListAdapter;
 
 import static nz.bradcampbell.paperparcel.PaperParcels.DELEGATE_SUFFIX;
 import static nz.bradcampbell.paperparcel.PaperParcels.WRAPPER_SUFFIX;
 import static nz.bradcampbell.paperparcel.utils.TypeUtils.hasTypeArguments;
-import static nz.bradcampbell.paperparcel.utils.TypeUtils.isSingleton;
 
 /**
  * An annotation processor that creates Parcelable wrappers for all Kotlin data classes annotated
@@ -40,18 +42,24 @@ import static nz.bradcampbell.paperparcel.utils.TypeUtils.isSingleton;
 public class PaperParcelProcessor extends AbstractProcessor {
   public static final String DATA_VARIABLE_NAME = "data";
 
+  private Set<Class<? extends TypeAdapter>> builtInAdapters =
+      ImmutableSet.<Class<? extends TypeAdapter>>builder()
+          .add(IntegerAdapter.class)
+          .add(BundleAdapter.class)
+          .add(MutableListAdapter.class)
+          .build();
+
+  private final Set<TypeElement> unprocessedTypes = new LinkedHashSet<>();
+  private final Map<ClassName, ClassName> wrappers = new LinkedHashMap<>();
+  private final Map<ClassName, ClassName> delegates = new LinkedHashMap<>();
+  private final WrapperGenerator wrapperGenerator = new WrapperGenerator();
+  private final DelegateGenerator delegateGenerator = new DelegateGenerator();
+  private final Map<TypeName, TypeElement> adapters = new LinkedHashMap<>();
+
   private Filer filer;
-  private Types typeUtil;
-  private Elements elementUtils;
-
-  private Map<TypeName, Adapter> defaultAdapters;
-  private Set<TypeElement> unprocessedTypes;
-  private Map<ClassName, ClassName> wrappers;
-  private Map<ClassName, ClassName> delegates;
-
-  private DataClassParser dataClassParser;
-  private WrapperGenerator wrapperGenerator;
-  private DelegateGenerator delegateGenerator;
+  private Types types;
+  private Elements elements;
+  private ClassInfoParser classInfoParser;
 
   @Override public Set<String> getSupportedAnnotationTypes() {
     Set<String> types = new LinkedHashSet<>();
@@ -66,19 +74,17 @@ public class PaperParcelProcessor extends AbstractProcessor {
 
   @Override public synchronized void init(ProcessingEnvironment env) {
     super.init(env);
-
-    typeUtil = env.getTypeUtils();
-    elementUtils = env.getElementUtils();
+    types = env.getTypeUtils();
+    elements = env.getElementUtils();
     filer = env.getFiler();
+    classInfoParser = new ClassInfoParser(processingEnv, adapters, wrappers, delegates);
 
-    defaultAdapters = new LinkedHashMap<>();
-    unprocessedTypes = new LinkedHashSet<>();
-    wrappers = new LinkedHashMap<>();
-    delegates = new LinkedHashMap<>();
-
-    dataClassParser = new DataClassParser(processingEnv, defaultAdapters, wrappers, delegates);
-    wrapperGenerator = new WrapperGenerator();
-    delegateGenerator = new DelegateGenerator();
+    // Convert all built-in adapters
+    for (Class<? extends TypeAdapter> typeAdapterClass : builtInAdapters) {
+      TypeElement element = elements.getTypeElement(typeAdapterClass.getName());
+      TypeName typeArgumentTypeName = getTypeArgumentFromTypeAdapterElement(element.asType());
+      adapters.put(typeArgumentTypeName, element);
+    }
   }
 
   @Override public boolean process(Set<? extends TypeElement> annotations,
@@ -88,18 +94,15 @@ public class PaperParcelProcessor extends AbstractProcessor {
 
     boolean isLastRound = roundEnvironment.processingOver();
 
-    // Parse models
-    Set<DataClass> newDataClasses = dataClassParser.parseDataClasses(unprocessedTypes, isLastRound);
-
-    // Generate wrappers
-    for (DataClass dataClass : newDataClasses) {
+    // Parse and generate wrappers
+    for (ClassInfo classInfo : classInfoParser.parseClasses(unprocessedTypes, isLastRound)) {
       try {
-        wrapperGenerator.generateParcelableWrapper(dataClass).writeTo(filer);
-        delegateGenerator.generatePaperParcelsDelegate(dataClass).writeTo(filer);
+        wrapperGenerator.generateParcelableWrapper(classInfo).writeTo(filer);
+        delegateGenerator.generatePaperParcelsDelegate(classInfo).writeTo(filer);
       } catch (IOException e) {
         processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
             "Could not write generated class "
-            + dataClass.getClassName()
+            + classInfo.getClassName()
             + ": "
             + e);
       }
@@ -112,11 +115,11 @@ public class PaperParcelProcessor extends AbstractProcessor {
     for (Element element : roundEnvironment.getElementsAnnotatedWith(DefaultAdapter.class)) {
 
       // Ensure we are dealing with a TypeAdapter
-      TypeMirror elementMirror = element.asType();
-      TypeMirror typeAdapterMirror = typeUtil.erasure(
-          elementUtils.getTypeElement(TypeAdapter.class.getCanonicalName()).asType());
+      TypeMirror elementMirror = types.erasure(element.asType());
+      TypeMirror typeAdapterMirror = types.erasure(
+          elements.getTypeElement(TypeAdapter.class.getCanonicalName()).asType());
 
-      if (!(typeUtil.isAssignable(elementMirror, typeAdapterMirror))) {
+      if (!(types.isAssignable(elementMirror, typeAdapterMirror))) {
         processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
             "@DefaultAdapter must be applied to a TypeAdapter<T>",
             element);
@@ -137,11 +140,8 @@ public class PaperParcelProcessor extends AbstractProcessor {
         continue;
       }
 
-      TypeElement typeElement = (TypeElement) element;
-      boolean singleton = isSingleton(typeUtil, typeElement);
-      TypeName typeAdapterType =
-          TypeUtils.getTypeAdapterType(typeUtil, (DeclaredType) typeElement.asType());
-      defaultAdapters.put(typeAdapterType, new Adapter(singleton, ClassName.get(typeElement)));
+      TypeName typeArgumentTypeName = getTypeArgumentFromTypeAdapterElement(element.asType());
+      adapters.put(typeArgumentTypeName, (TypeElement) element);
     }
   }
 
@@ -183,5 +183,20 @@ public class PaperParcelProcessor extends AbstractProcessor {
           ClassName.get(className.packageName(), className.simpleName() + DELEGATE_SUFFIX);
       delegates.put(className, delegateName);
     }
+  }
+
+  private TypeName getTypeArgumentFromTypeAdapterElement(TypeMirror type) {
+    List<? extends TypeMirror> superTypes = types.directSupertypes(type);
+    TypeName result = null;
+    for (TypeMirror superType : superTypes) {
+      if (types.erasure(superType).toString().equals(TypeAdapter.class.getName())) {
+        DeclaredType typeAdapterType = (DeclaredType) superType;
+        result = TypeName.get(types.erasure(typeAdapterType.getTypeArguments().get(0)));
+      } else {
+        result = getTypeArgumentFromTypeAdapterElement(superType);
+      }
+      if (result != null) break;
+    }
+    return result;
   }
 }

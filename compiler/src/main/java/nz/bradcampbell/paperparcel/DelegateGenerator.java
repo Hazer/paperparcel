@@ -9,7 +9,7 @@ import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
-import nz.bradcampbell.paperparcel.model.DataClass;
+import nz.bradcampbell.paperparcel.model.ClassInfo;
 
 import static javax.lang.model.element.Modifier.FINAL;
 import static javax.lang.model.element.Modifier.PUBLIC;
@@ -17,20 +17,20 @@ import static javax.lang.model.element.Modifier.PUBLIC;
 public class DelegateGenerator {
   private static final ClassName DELEGATE = ClassName.get(PaperParcels.Delegate.class);
 
-  public JavaFile generatePaperParcelsDelegate(DataClass dataClass) {
+  public JavaFile generatePaperParcelsDelegate(ClassInfo classInfo) {
     AnnotationSpec suppressWarningsSpec = AnnotationSpec.builder(SuppressWarnings.class)
         .addMember("value", CodeBlock.of("$S", "unused"))
         .build();
-    TypeName delegateInterface = ParameterizedTypeName.get(DELEGATE, dataClass.getClassName(),
-        dataClass.getWrapperClassName());
-    TypeSpec delegateSpec = TypeSpec.classBuilder(dataClass.getDelegateClassName().simpleName())
+    TypeName delegateInterface = ParameterizedTypeName.get(DELEGATE, classInfo.getClassName(),
+        classInfo.getWrapperClassName());
+    TypeSpec delegateSpec = TypeSpec.classBuilder(classInfo.getDelegateClassName().simpleName())
         .addAnnotation(suppressWarningsSpec)
         .addModifiers(PUBLIC, FINAL)
         .addSuperinterface(delegateInterface)
-        .addMethod(generateWrapMethod(dataClass.getClassName(), dataClass.getWrapperClassName()))
-        .addMethod(generateNewArrayMethod(dataClass.getClassName()))
+        .addMethod(generateWrapMethod(classInfo.getClassName(), classInfo.getWrapperClassName()))
+        .addMethod(generateNewArrayMethod(classInfo.getClassName()))
         .build();
-    return JavaFile.builder(dataClass.getClassPackage(), delegateSpec).build();
+    return JavaFile.builder(classInfo.getClassPackage(), delegateSpec).build();
   }
 
   private MethodSpec generateNewArrayMethod(ClassName className) {

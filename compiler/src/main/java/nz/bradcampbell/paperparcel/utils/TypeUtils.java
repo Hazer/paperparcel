@@ -1,7 +1,5 @@
 package nz.bradcampbell.paperparcel.utils;
 
-import com.squareup.javapoet.ParameterizedTypeName;
-import com.squareup.javapoet.TypeName;
 import java.util.List;
 import java.util.Set;
 import javax.lang.model.element.Element;
@@ -13,7 +11,6 @@ import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Types;
-import nz.bradcampbell.paperparcel.TypeAdapter;
 
 import static javax.lang.model.element.Modifier.FINAL;
 import static javax.lang.model.element.Modifier.PUBLIC;
@@ -22,11 +19,6 @@ import static javax.lang.model.element.Modifier.STATIC;
 public class TypeUtils {
   private TypeUtils() {
     // No instances.
-  }
-
-  public static boolean isInterface(Types typeUtil, TypeMirror typeMirror) {
-    Element typeElement = typeUtil.asElement(typeMirror);
-    return typeElement != null && typeElement.getKind() == ElementKind.INTERFACE;
   }
 
   public static boolean hasTypeArguments(TypeElement typeElement) {
@@ -73,26 +65,9 @@ public class TypeUtils {
     return (PackageElement) type;
   }
 
-  public static TypeName getTypeAdapterType(Types typeUtil, DeclaredType typeAdapter) {
-    TypeName typeAdapterTypeName = TypeName.get(TypeAdapter.class);
-    List<? extends TypeMirror> interfaces =
-        ((TypeElement) typeUtil.asElement(typeAdapter)).getInterfaces();
-    for (TypeMirror intf : interfaces) {
-      TypeName typeName = TypeName.get(intf);
-      if (typeName instanceof ParameterizedTypeName) {
-        ParameterizedTypeName paramTypeName = (ParameterizedTypeName) typeName;
-        if (paramTypeName.rawType.equals(typeAdapterTypeName)) {
-          return paramTypeName.typeArguments.get(0);
-        }
-      }
-    }
-    return null;
-  }
-
   /**
    * A singleton is defined by a class with a public static final field named "INSTANCE" with a type
-   * assignable from
-   * the class itself
+   * assignable from the class itself
    *
    * @param typeUtils Type utils
    * @param el The data class

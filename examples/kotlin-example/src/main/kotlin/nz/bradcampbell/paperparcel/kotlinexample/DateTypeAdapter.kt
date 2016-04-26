@@ -1,15 +1,15 @@
 package nz.bradcampbell.paperparcel.kotlinexample
 
 import android.os.Parcel
-import nz.bradcampbell.paperparcel.TypeAdapter
-import java.util.Date
+import nz.bradcampbell.paperparcel.typeadapters.AbstractAdapter
+import java.util.*
 
-object DateTypeAdapter : TypeAdapter<Date> {
-  override fun writeToParcel(value: Date, outParcel: Parcel, flags: Int) {
-    outParcel.writeLong(value.time)
+object DateTypeAdapter : AbstractAdapter<Date>() {
+  override fun writeToParcelInner(value: Date, dest: Parcel, flags: Int) {
+    dest.writeLong(value.time);
   }
 
-  override fun readFromParcel(inParcel: Parcel): Date {
-    return Date(inParcel.readLong())
+  override fun readFromParcelInner(source: Parcel): Date {
+    return Date(source.readLong())
   }
 }
