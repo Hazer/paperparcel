@@ -2,6 +2,7 @@ package nz.bradcampbell.paperparcel.typeadapters;
 
 import android.os.Bundle;
 import android.os.Parcel;
+import nz.bradcampbell.paperparcel.typeadapters.base.AbstractAdapter;
 import org.jetbrains.annotations.NotNull;
 
 public class BundleAdapter extends AbstractAdapter<Bundle> {

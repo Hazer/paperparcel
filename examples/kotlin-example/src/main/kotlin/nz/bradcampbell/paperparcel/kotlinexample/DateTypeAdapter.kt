@@ -1,7 +1,7 @@
 package nz.bradcampbell.paperparcel.kotlinexample
 
 import android.os.Parcel
-import nz.bradcampbell.paperparcel.typeadapters.AbstractAdapter
+import nz.bradcampbell.paperparcel.typeadapters.base.AbstractAdapter
 import java.util.*
 
 object DateTypeAdapter : AbstractAdapter<Date>() {

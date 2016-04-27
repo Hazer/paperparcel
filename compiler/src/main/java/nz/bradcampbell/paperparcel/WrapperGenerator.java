@@ -79,8 +79,13 @@ public class WrapperGenerator {
       Map<AdapterInfo, String> adapterNameMap = initializeTypeAdaptersForFields(block, fields);
 
       for (FieldInfo field : fields) {
-        block.addStatement("$T $N = $N.readFromParcel($N)", field.getTypeName(), field.getName(),
-            adapterNameMap.get(field.getAdapterInfo()), in);
+        TypeName fieldTypeName = field.getTypeName();
+        if (fieldTypeName.isPrimitive()) {
+          readPrimitiveType(block, field, in);
+        } else {
+          block.addStatement("$T $N = $N.readFromParcel($N)", fieldTypeName, field.getName(),
+              adapterNameMap.get(field.getAdapterInfo()), in);
+        }
       }
 
       final String fieldName = PaperParcelProcessor.DATA_VARIABLE_NAME;
@@ -193,11 +198,13 @@ public class WrapperGenerator {
     for (FieldInfo field : fields) {
       String accessorStrategy = field.isVisible() ?
           field.getName() : field.getGetterMethodName() + "()";
-
-      String dataFieldName = "this." + DATA_VARIABLE_NAME;
-
-      block.addStatement("$N.writeToParcel($N.$N, $N, $N)",
-          adapterNameMap.get(field.getAdapterInfo()), dataFieldName, accessorStrategy, dest, flags);
+      CodeBlock value = CodeBlock.of("$N.$N", "this." + DATA_VARIABLE_NAME, accessorStrategy);
+      if (field.getTypeName().isPrimitive()) {
+        writePrimitiveType(block, value, field, dest);
+      } else {
+        String adapterName = adapterNameMap.get(field.getAdapterInfo());
+        block.addStatement("$N.writeToParcel($L, $N, $N)", adapterName, value, dest, flags);
+      }
     }
 
     return builder.addCode(block.build()).build();
@@ -208,7 +215,10 @@ public class WrapperGenerator {
     Map<AdapterInfo, String> adapterNameMap = new LinkedHashMap<>();
     Set<AdapterInfo> scopedAdapters = new LinkedHashSet<>();
     for (FieldInfo field : fields) {
-      initializeTypeAdapter(block, field.getAdapterInfo(), scopedAdapters, adapterNameMap);
+      AdapterInfo adapterInfo = field.getAdapterInfo();
+      if (adapterInfo != null) {
+        initializeTypeAdapter(block, adapterInfo, scopedAdapters, adapterNameMap);
+      }
     }
     return adapterNameMap;
   }
@@ -275,6 +285,53 @@ public class WrapperGenerator {
       throw new AssertionError("Unknown type " + adapterTypeName.getClass());
     }
     return adapterName;
+  }
+
+  private void readPrimitiveType(CodeBlock.Builder block, FieldInfo field, ParameterSpec in) {
+    TypeName typeName = field.getTypeName();
+    if (TypeName.INT.equals(typeName)) {
+      block.addStatement("$T $N = $N.readInt()", typeName, field.getName(), in);
+    } else if (TypeName.BOOLEAN.equals(typeName)) {
+      block.addStatement("$T $N = $N.readInt() == 1", typeName, field.getName(), in);
+    } else if (TypeName.BYTE.equals(typeName)) {
+      block.addStatement("$T $N = $N.readByte()", typeName, field.getName(), in);
+    } else if (TypeName.CHAR.equals(typeName)) {
+      block.addStatement("$T $N = (char) $N.readInt()", typeName, field.getName(), in);
+    } else if (TypeName.DOUBLE.equals(typeName)) {
+      block.addStatement("$T $N = $N.readDouble()", typeName, field.getName(), in);
+    } else if (TypeName.FLOAT.equals(typeName)) {
+      block.addStatement("$T $N = $N.readFloat()", typeName, field.getName(), in);
+    } else if (TypeName.LONG.equals(typeName)) {
+      block.addStatement("$T $N = $N.readLong()", typeName, field.getName(), in);
+    } else if (TypeName.SHORT.equals(typeName)) {
+      block.addStatement("$T $N = (short) $N.readInt()", typeName, field.getName(), in);
+    } else {
+      throw new AssertionError("Unknown primitive type " + typeName);
+    }
+  }
+
+  private void writePrimitiveType(CodeBlock.Builder block, CodeBlock value, FieldInfo field,
+      ParameterSpec dest) {
+    TypeName typeName = field.getTypeName();
+    if (TypeName.INT.equals(typeName)) {
+      block.addStatement("$N.writeInt($L)", dest, value);
+    } else if (TypeName.BOOLEAN.equals(typeName)) {
+      block.addStatement("$N.writeInt($L ? 1 : 0)", dest, value);
+    } else if (TypeName.BYTE.equals(typeName)) {
+      block.addStatement("$N.writeByte($L)", dest, value);
+    } else if (TypeName.CHAR.equals(typeName)) {
+      block.addStatement("$N.writeInt($L)", dest, value);
+    } else if (TypeName.DOUBLE.equals(typeName)) {
+      block.addStatement("$N.writeDouble($L)", dest, value);
+    } else if (TypeName.FLOAT.equals(typeName)) {
+      block.addStatement("$N.writeFloat($L)", dest, value);
+    } else if (TypeName.LONG.equals(typeName)) {
+      block.addStatement("$N.writeLong($L)", dest, value);
+    } else if (TypeName.SHORT.equals(typeName)) {
+      block.addStatement("$N.writeInt($L)", dest, value);
+    } else {
+      throw new AssertionError("Unknown primitive type " + typeName);
+    }
   }
 
   private void constructType(List<FieldInfo> args, TypeName typeName, String fieldName,

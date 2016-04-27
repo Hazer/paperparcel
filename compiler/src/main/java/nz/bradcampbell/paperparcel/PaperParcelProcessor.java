@@ -53,7 +53,7 @@ public class PaperParcelProcessor extends AbstractProcessor {
 
   private final Map<ClassName, ClassName> wrappers = new LinkedHashMap<>();
   private final Map<ClassName, ClassName> delegates = new LinkedHashMap<>();
-  private final Map<TypeName, TypeElement> adapters = new LinkedHashMap<>();
+  private final Map<TypeName, String> adapters = new LinkedHashMap<>();
 
   private final WrapperGenerator wrapperGenerator = new WrapperGenerator();
   private final DelegateGenerator delegateGenerator = new DelegateGenerator();
@@ -86,7 +86,7 @@ public class PaperParcelProcessor extends AbstractProcessor {
     for (Class<? extends TypeAdapter> typeAdapterClass : builtInAdapters) {
       TypeElement element = elements.getTypeElement(typeAdapterClass.getName());
       TypeName typeArgumentTypeName = getTypeArgumentFromTypeAdapterType(element.asType());
-      adapters.put(typeArgumentTypeName, element);
+      adapters.put(typeArgumentTypeName, element.toString());
     }
   }
 
@@ -144,7 +144,7 @@ public class PaperParcelProcessor extends AbstractProcessor {
       }
 
       TypeName typeArgumentTypeName = getTypeArgumentFromTypeAdapterType(element.asType());
-      adapters.put(typeArgumentTypeName, (TypeElement) element);
+      adapters.put(typeArgumentTypeName, element.toString());
     }
   }
 

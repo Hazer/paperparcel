@@ -1,4 +1,4 @@
-package nz.bradcampbell.paperparcel.typeadapters;
+package nz.bradcampbell.paperparcel.typeadapters.base;
 
 import android.os.Parcel;
 import nz.bradcampbell.paperparcel.TypeAdapter;

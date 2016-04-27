@@ -1,6 +1,7 @@
 package nz.bradcampbell.paperparcel.typeadapters;
 
 import android.os.Parcel;
+import nz.bradcampbell.paperparcel.typeadapters.base.AbstractAdapter;
 import org.jetbrains.annotations.NotNull;
 
 public final class IntegerAdapter extends AbstractAdapter<Integer> {

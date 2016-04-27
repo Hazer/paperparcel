@@ -497,8 +497,7 @@ public class ExcludeFieldsTests {
             "    return 0;",
             "  }",
             "  @Override public void writeToParcel(Parcel dest, int flags) {",
-            "    int child = this.data.child;",
-            "    dest.writeInt(child);",
+            "    dest.writeInt(this.data.child);",
             "  }",
             "}"
         ));

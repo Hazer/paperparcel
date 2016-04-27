@@ -3,7 +3,7 @@ package nz.bradcampbell.paperparcel.model;
 import com.google.common.base.Objects;
 import com.squareup.javapoet.TypeName;
 
-public class FieldInfo {
+public final class FieldInfo {
   private final AdapterInfo adapterInfo;
   private final TypeName typeName;
   private final String name;

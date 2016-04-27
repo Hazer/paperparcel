@@ -7,7 +7,7 @@ import java.util.List;
 /**
  * A model object that holds information needed to build a Parcelable data class wrapper
  */
-public class ClassInfo {
+public final class ClassInfo {
   private final String classPackage;
   private final List<FieldInfo> fields;
   private final ClassName className;

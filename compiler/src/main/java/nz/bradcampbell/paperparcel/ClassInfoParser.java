@@ -58,11 +58,11 @@ public class ClassInfoParser {
 
   private final ProcessingEnvironment processingEnv;
 
-  private final Map<TypeName, TypeElement> adapters;
+  private final Map<TypeName, String> adapters;
   private final Map<ClassName, ClassName> wrappers;
   private final Map<ClassName, ClassName> delegates;
 
-  public ClassInfoParser(ProcessingEnvironment processingEnv, Map<TypeName, TypeElement> adapters,
+  public ClassInfoParser(ProcessingEnvironment processingEnv, Map<TypeName, String> adapters,
       Map<ClassName, ClassName> wrappers, Map<ClassName, ClassName> delegates) {
     this.processingEnv = processingEnv;
     this.adapters = adapters;
@@ -195,7 +195,7 @@ public class ClassInfoParser {
     boolean singleton = isSingleton(processingEnv.getTypeUtils(), element);
     if (!singleton) {
 
-      Map<TypeName, TypeElement> classScopedAdapters = new LinkedHashMap<>(adapters);
+      Map<TypeName, String> classScopedAdapters = new LinkedHashMap<>(adapters);
 
       // Override the type adapters with the current element preferences
       Map<String, Object> typeAdapterAnnotationMap =
@@ -215,7 +215,7 @@ public class ClassInfoParser {
         VariableElement variable = variableElementInfo.element;
 
         // Get the variable scoped type adapters
-        Map<TypeName, TypeElement> variableScopedTypeAdapters =
+        Map<TypeName, String> variableScopedTypeAdapters =
             new LinkedHashMap<>(classScopedAdapters);
         Map<String, Object> annotation =
             getAnnotation(TypeAdapters.class, variableElementInfo.element);
@@ -227,18 +227,20 @@ public class ClassInfoParser {
         String name = variable.getSimpleName().toString();
         TypeName typeName = TypeName.get(variable.asType());
 
-        // A field is considered "nullable" when it is a non-primitive and not annotated
-        // with @NonNull or @NotNull
-        //boolean primitive = variable.asType().getKind().isPrimitive();
+         //A field is considered "nullable" when it is a non-primitive and not annotated
+         //with @NonNull or @NotNull
+        boolean isPrimitive = variable.asType().getKind().isPrimitive();
         //boolean annotatedWithNonNull = isFieldRequired(variableElementInfo.getterMethod)
         //    || isFieldRequired(variable);
         //boolean isNullable = !primitive && !annotatedWithNonNull;
 
-        AdapterInfo adapter;
-        try {
-          adapter = parseAdapterInfo(variable.asType());
-        } catch (UnknownTypeException e) {
-          throw new UnknownFieldTypeException(variable, e.unknownType);
+        AdapterInfo adapter = null;
+        if (!isPrimitive) {
+          try {
+            adapter = parseAdapterInfo(variable.asType());
+          } catch (UnknownTypeException e) {
+            throw new UnknownFieldTypeException(variable, e.unknownType);
+          }
         }
 
         String setterMethodName = null;
@@ -270,19 +272,27 @@ public class ClassInfoParser {
     return null;
   }
 
-  private Map<TypeName, TypeElement> getTypeAdaptersFromAnnotation(Map<String, Object> annotation) {
-    Map<TypeName, TypeElement> typeAdapters = new LinkedHashMap<>();
+  private Map<TypeName, String> getTypeAdaptersFromAnnotation(Map<String, Object> annotation) {
+    Map<TypeName, String> typeAdapters = new LinkedHashMap<>();
     if (annotation != null) {
-      Types types = processingEnv.getTypeUtils();
       Object[] typeAdaptersArray = (Object[]) annotation.get("value");
       for (Object o : typeAdaptersArray) {
         TypeMirror type = (TypeMirror) o;
-        TypeName typeName = TypeName.get(type);
-        TypeElement element = (TypeElement) types.asElement(type);
-        typeAdapters.put(typeName, element);
+        TypeName typeName = getTypeArgumentFromTypeAdapterType(type);
+        typeAdapters.put(typeName, type.toString());
       }
     }
     return typeAdapters;
+  }
+
+  private TypeName getTypeArgumentFromTypeAdapterType(TypeMirror type) {
+    Types types = processingEnv.getTypeUtils();
+    List<? extends TypeMirror> typeAdapterArguments = getArgumentsOfClassFromType(types, type,
+        TypeAdapter.class);
+    if (typeAdapterArguments == null) {
+      throw new AssertionError("TypeAdapter should have a type argument: " + type);
+    }
+    return TypeName.get(types.erasure(typeAdapterArguments.get(0)));
   }
 
   private <T extends Annotation> T getLocalOrInheritedAnnotation(Class<T> annotationType,
@@ -555,10 +565,11 @@ public class ClassInfoParser {
     Elements elements = processingEnv.getElementUtils();
 
     TypeMirror erasedType = types.erasure(type);
-    TypeElement element = adapters.get(TypeName.get(erasedType));
-    if (element == null) {
+    String elementName = adapters.get(TypeName.get(erasedType));
+    if (elementName == null) {
       throw new UnknownTypeException(erasedType);
     }
+    TypeElement element = elements.getTypeElement(elementName);
 
     TypeMirror typeAdapterType =
         types.erasure(elements.getTypeElement(TypeAdapter.class.getName()).asType());
