@@ -50,6 +50,7 @@ import static javax.lang.model.util.ElementFilter.fieldsIn;
 import static nz.bradcampbell.paperparcel.FieldMatcher.ANY_NAME;
 import static nz.bradcampbell.paperparcel.utils.AnnotationUtils.getAnnotation;
 import static nz.bradcampbell.paperparcel.utils.StringUtils.startsWithVowel;
+import static nz.bradcampbell.paperparcel.utils.TypeUtils.getArgumentsOfClassFromType;
 import static nz.bradcampbell.paperparcel.utils.TypeUtils.isSingleton;
 
 public class ClassInfoParser {
@@ -596,8 +597,12 @@ public class ClassInfoParser {
         if (!types.isAssignable(erasedParamType, typeAdapterType)) {
           throw new InvalidConstructorException(constructor);
         }
-        TypeMirror typeArgumentType = ((DeclaredType) param).getTypeArguments().get(0);
-        dependencies.add(parseAdapterInfo(typeArgumentType));
+        List<? extends TypeMirror> typeAdapterArguments = getArgumentsOfClassFromType(types, param,
+            TypeAdapter.class);
+        if (typeAdapterArguments == null) {
+          throw new AssertionError("TypeAdapter should have a type argument: " + param);
+        }
+        dependencies.add(parseAdapterInfo(typeAdapterArguments.get(0)));
       }
     }
 

@@ -3,6 +3,7 @@ package nz.bradcampbell.paperparcel;
 import com.google.common.base.Predicate;
 import com.google.common.collect.FluentIterable;
 import com.google.common.primitives.Ints;
+import com.squareup.javapoet.ArrayTypeName;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.FieldSpec;
@@ -12,6 +13,7 @@ import com.squareup.javapoet.ParameterSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
+import com.squareup.javapoet.WildcardTypeName;
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -74,7 +76,7 @@ public class WrapperGenerator {
             PARCEL, in);
 
     if (!isSingleton) {
-      Map<AdapterInfo, String> adapterNameMap = initializeRequiredTypeAdapters(block, fields);
+      Map<AdapterInfo, String> adapterNameMap = initializeTypeAdaptersForFields(block, fields);
 
       for (FieldInfo field : fields) {
         block.addStatement("$T $N = $N.readFromParcel($N)", field.getTypeName(), field.getName(),
@@ -144,22 +146,6 @@ public class WrapperGenerator {
         Modifier.STATIC).initializer(block.build()).build();
   }
 
-  private CodeBlock generateTypeAdapterInitializer(AdapterInfo adapterInfo) {
-    // TODO: singleton type adapters
-    CodeBlock.Builder block = CodeBlock.builder();
-    block.add("new $T(", adapterInfo.getTypeName());
-    List<AdapterInfo> dependencies = adapterInfo.getDependencies();
-    for (int i = 0; i < dependencies.size(); i++) {
-      AdapterInfo dependency = dependencies.get(i);
-      block.add(generateTypeAdapterInitializer(dependency));
-      if (i != dependencies.size() - 1) {
-        block.add(", ");
-      }
-    }
-    block.add(")");
-    return block.build();
-  }
-
   private FieldSpec generateContentsField(TypeName className) {
     return FieldSpec.builder(className, DATA_VARIABLE_NAME, PRIVATE, FINAL).build();
   }
@@ -202,7 +188,7 @@ public class WrapperGenerator {
 
     CodeBlock.Builder block = CodeBlock.builder();
 
-    Map<AdapterInfo, String> adapterNameMap = initializeRequiredTypeAdapters(block, fields);
+    Map<AdapterInfo, String> adapterNameMap = initializeTypeAdaptersForFields(block, fields);
 
     for (FieldInfo field : fields) {
       String accessorStrategy = field.isVisible() ?
@@ -217,31 +203,78 @@ public class WrapperGenerator {
     return builder.addCode(block.build()).build();
   }
 
-  private Map<AdapterInfo, String> initializeRequiredTypeAdapters(CodeBlock.Builder block,
+  private Map<AdapterInfo, String> initializeTypeAdaptersForFields(CodeBlock.Builder block,
       List<FieldInfo> fields) {
     Map<AdapterInfo, String> adapterNameMap = new LinkedHashMap<>();
-
-    // Initialize adapters (ignoring duplicates)
-    Set<AdapterInfo> requiredAdapters = new LinkedHashSet<>();
+    Set<AdapterInfo> scopedAdapters = new LinkedHashSet<>();
     for (FieldInfo field : fields) {
-      AdapterInfo adapterInfo = field.getAdapterInfo();
-      if (!requiredAdapters.contains(adapterInfo)) {
-        TypeName adapterTypeName = adapterInfo.getTypeName();
-        ClassName adapterClassName;
-        if (adapterTypeName instanceof ParameterizedTypeName) {
-          adapterClassName = ((ParameterizedTypeName) adapterTypeName).rawType;
-        } else {
-          adapterClassName = (ClassName) adapterTypeName;
-        }
-        String simpleName = uncapitalizeFirstCharacter(adapterClassName.simpleName());
-        block.addStatement("$T $N = $L", adapterInfo.getTypeName(), simpleName,
-            generateTypeAdapterInitializer(adapterInfo));
-        requiredAdapters.add(adapterInfo);
-        adapterNameMap.put(adapterInfo, simpleName);
-      }
+      initializeTypeAdapter(block, field.getAdapterInfo(), scopedAdapters, adapterNameMap);
     }
-
     return adapterNameMap;
+  }
+
+  private void initializeTypeAdapter(CodeBlock.Builder block, AdapterInfo adapterInfo,
+      Set<AdapterInfo> scopedAdapters, Map<AdapterInfo, String> adapterNameMap) {
+
+    if (!scopedAdapters.contains(adapterInfo)) {
+      List<AdapterInfo> dependencies = adapterInfo.getDependencies();
+
+      for (AdapterInfo dependency : dependencies) {
+        initializeTypeAdapter(block, dependency, scopedAdapters, adapterNameMap);
+      }
+
+      String name = uncapitalizeFirstCharacter(getTypeAdapterName(adapterInfo.getTypeName()));
+
+      block.add("$T $N = new $T(", adapterInfo.getTypeName(), name,
+          adapterInfo.getTypeName());
+      for (int i = 0; i < dependencies.size(); i++) {
+        AdapterInfo dependency = dependencies.get(i);
+        block.add(adapterNameMap.get(dependency));
+        if (i != dependencies.size() - 1) {
+          block.add(", ");
+        }
+      }
+      block.addStatement(")");
+
+      scopedAdapters.add(adapterInfo);
+      adapterNameMap.put(adapterInfo, name);
+    }
+  }
+
+  private String getTypeAdapterName(TypeName adapterTypeName) {
+    String adapterName = null;
+    if (adapterTypeName instanceof WildcardTypeName) {
+      WildcardTypeName wildcardTypeName = (WildcardTypeName) adapterTypeName;
+      String upperBoundsPart = "";
+      String lowerBoundsPart = "";
+      for (TypeName upperBound : wildcardTypeName.upperBounds) {
+        upperBoundsPart += getTypeAdapterName(upperBound);
+      }
+      for (TypeName lowerBound : wildcardTypeName.lowerBounds) {
+        lowerBoundsPart += getTypeAdapterName(lowerBound);
+      }
+      adapterName = upperBoundsPart + lowerBoundsPart;
+    }
+    if (adapterTypeName instanceof ArrayTypeName) {
+      ArrayTypeName arrayTypeName = (ArrayTypeName) adapterTypeName;
+      adapterName = getTypeAdapterName(arrayTypeName.componentType) + "Array";
+    }
+    if (adapterTypeName instanceof ParameterizedTypeName) {
+      ParameterizedTypeName parameterizedTypeName = (ParameterizedTypeName) adapterTypeName;
+      String paramPart = "";
+      for (TypeName param : parameterizedTypeName.typeArguments) {
+        paramPart += getTypeAdapterName(param);
+      }
+      adapterName = paramPart + parameterizedTypeName.rawType.simpleName();
+    }
+    if (adapterTypeName instanceof ClassName) {
+      ClassName className = (ClassName) adapterTypeName;
+      adapterName = className.simpleName();
+    }
+    if (adapterName == null) {
+      throw new AssertionError("Unknown type " + adapterTypeName.getClass());
+    }
+    return adapterName;
   }
 
   private void constructType(List<FieldInfo> args, TypeName typeName, String fieldName,

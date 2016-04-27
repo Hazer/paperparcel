@@ -20,7 +20,6 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
-import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
@@ -28,10 +27,11 @@ import javax.tools.Diagnostic;
 import nz.bradcampbell.paperparcel.model.ClassInfo;
 import nz.bradcampbell.paperparcel.typeadapters.BundleAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.IntegerAdapter;
-import nz.bradcampbell.paperparcel.typeadapters.MutableListAdapter;
+import nz.bradcampbell.paperparcel.typeadapters.ListAdapter;
 
 import static nz.bradcampbell.paperparcel.PaperParcels.DELEGATE_SUFFIX;
 import static nz.bradcampbell.paperparcel.PaperParcels.WRAPPER_SUFFIX;
+import static nz.bradcampbell.paperparcel.utils.TypeUtils.getArgumentsOfClassFromType;
 import static nz.bradcampbell.paperparcel.utils.TypeUtils.hasTypeArguments;
 
 /**
@@ -46,19 +46,22 @@ public class PaperParcelProcessor extends AbstractProcessor {
       ImmutableSet.<Class<? extends TypeAdapter>>builder()
           .add(IntegerAdapter.class)
           .add(BundleAdapter.class)
-          .add(MutableListAdapter.class)
+          .add(ListAdapter.class)
           .build();
 
   private final Set<TypeElement> unprocessedTypes = new LinkedHashSet<>();
+
   private final Map<ClassName, ClassName> wrappers = new LinkedHashMap<>();
   private final Map<ClassName, ClassName> delegates = new LinkedHashMap<>();
+  private final Map<TypeName, TypeElement> adapters = new LinkedHashMap<>();
+
   private final WrapperGenerator wrapperGenerator = new WrapperGenerator();
   private final DelegateGenerator delegateGenerator = new DelegateGenerator();
-  private final Map<TypeName, TypeElement> adapters = new LinkedHashMap<>();
 
   private Filer filer;
   private Types types;
   private Elements elements;
+
   private ClassInfoParser classInfoParser;
 
   @Override public Set<String> getSupportedAnnotationTypes() {
@@ -82,7 +85,7 @@ public class PaperParcelProcessor extends AbstractProcessor {
     // Convert all built-in adapters
     for (Class<? extends TypeAdapter> typeAdapterClass : builtInAdapters) {
       TypeElement element = elements.getTypeElement(typeAdapterClass.getName());
-      TypeName typeArgumentTypeName = getTypeArgumentFromTypeAdapterElement(element.asType());
+      TypeName typeArgumentTypeName = getTypeArgumentFromTypeAdapterType(element.asType());
       adapters.put(typeArgumentTypeName, element);
     }
   }
@@ -140,7 +143,7 @@ public class PaperParcelProcessor extends AbstractProcessor {
         continue;
       }
 
-      TypeName typeArgumentTypeName = getTypeArgumentFromTypeAdapterElement(element.asType());
+      TypeName typeArgumentTypeName = getTypeArgumentFromTypeAdapterType(element.asType());
       adapters.put(typeArgumentTypeName, (TypeElement) element);
     }
   }
@@ -185,18 +188,12 @@ public class PaperParcelProcessor extends AbstractProcessor {
     }
   }
 
-  private TypeName getTypeArgumentFromTypeAdapterElement(TypeMirror type) {
-    List<? extends TypeMirror> superTypes = types.directSupertypes(type);
-    TypeName result = null;
-    for (TypeMirror superType : superTypes) {
-      if (types.erasure(superType).toString().equals(TypeAdapter.class.getName())) {
-        DeclaredType typeAdapterType = (DeclaredType) superType;
-        result = TypeName.get(types.erasure(typeAdapterType.getTypeArguments().get(0)));
-      } else {
-        result = getTypeArgumentFromTypeAdapterElement(superType);
-      }
-      if (result != null) break;
+  private TypeName getTypeArgumentFromTypeAdapterType(TypeMirror type) {
+    List<? extends TypeMirror> typeAdapterArguments = getArgumentsOfClassFromType(types, type,
+        TypeAdapter.class);
+    if (typeAdapterArguments == null) {
+      throw new AssertionError("TypeAdapter should have a type argument: " + type);
     }
-    return result;
+    return TypeName.get(types.erasure(typeAdapterArguments.get(0)));
   }
 }

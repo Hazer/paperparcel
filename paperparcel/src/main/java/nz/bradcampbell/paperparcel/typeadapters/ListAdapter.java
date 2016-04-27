@@ -6,8 +6,8 @@ import java.util.List;
 import nz.bradcampbell.paperparcel.TypeAdapter;
 import org.jetbrains.annotations.NotNull;
 
-public final class MutableListAdapter<T> extends CollectionAdapter<List<T>, T> {
-  public MutableListAdapter(TypeAdapter<T> itemAdapter) {
+public final class ListAdapter<T> extends CollectionAdapter<List<T>, T> {
+  public ListAdapter(TypeAdapter<T> itemAdapter) {
     super(itemAdapter);
   }
 
