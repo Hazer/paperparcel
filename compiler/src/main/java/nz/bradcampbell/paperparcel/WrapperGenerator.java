@@ -227,24 +227,26 @@ public class WrapperGenerator {
       Set<AdapterInfo> scopedAdapters, Map<AdapterInfo, String> adapterNameMap) {
 
     if (!scopedAdapters.contains(adapterInfo)) {
-      List<AdapterInfo> dependencies = adapterInfo.getDependencies();
-
-      for (AdapterInfo dependency : dependencies) {
-        initializeTypeAdapter(block, dependency, scopedAdapters, adapterNameMap);
-      }
-
+      TypeName adapterTypeName = adapterInfo.getTypeName();
       String name = uncapitalizeFirstCharacter(getTypeAdapterName(adapterInfo.getTypeName()));
 
-      block.add("$T $N = new $T(", adapterInfo.getTypeName(), name,
-          adapterInfo.getTypeName());
-      for (int i = 0; i < dependencies.size(); i++) {
-        AdapterInfo dependency = dependencies.get(i);
-        block.add(adapterNameMap.get(dependency));
-        if (i != dependencies.size() - 1) {
-          block.add(", ");
+      if (adapterInfo.isSingleton()) {
+        block.addStatement("$1T $2N = $1T.INSTANCE", adapterTypeName, name);
+      } else {
+        List<AdapterInfo> dependencies = adapterInfo.getDependencies();
+        for (AdapterInfo dependency : dependencies) {
+          initializeTypeAdapter(block, dependency, scopedAdapters, adapterNameMap);
         }
+        block.add("$T $N = new $T(", adapterTypeName, name, adapterTypeName);
+        for (int i = 0; i < dependencies.size(); i++) {
+          AdapterInfo dependency = dependencies.get(i);
+          block.add(adapterNameMap.get(dependency));
+          if (i != dependencies.size() - 1) {
+            block.add(", ");
+          }
+        }
+        block.addStatement(")");
       }
-      block.addStatement(")");
 
       scopedAdapters.add(adapterInfo);
       adapterNameMap.put(adapterInfo, name);

@@ -1,5 +1,6 @@
 package nz.bradcampbell.paperparcel;
 
+import com.google.auto.common.MoreTypes;
 import com.google.auto.common.Visibility;
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
@@ -31,6 +32,7 @@ import javax.lang.model.type.ExecutableType;
 import javax.lang.model.type.MirroredTypeException;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.type.WildcardType;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
@@ -51,6 +53,7 @@ import static nz.bradcampbell.paperparcel.FieldMatcher.ANY_NAME;
 import static nz.bradcampbell.paperparcel.utils.AnnotationUtils.getAnnotation;
 import static nz.bradcampbell.paperparcel.utils.StringUtils.startsWithVowel;
 import static nz.bradcampbell.paperparcel.utils.TypeUtils.getArgumentsOfClassFromType;
+import static nz.bradcampbell.paperparcel.utils.TypeUtils.isEqualIgnoringWildcards;
 import static nz.bradcampbell.paperparcel.utils.TypeUtils.isSingleton;
 
 public class ClassInfoParser {
@@ -237,7 +240,7 @@ public class ClassInfoParser {
         AdapterInfo adapter = null;
         if (!isPrimitive) {
           try {
-            adapter = parseAdapterInfo(variable.asType());
+            adapter = parseAdapterInfo(variable.asType(), variableScopedTypeAdapters);
           } catch (UnknownTypeException e) {
             throw new UnknownFieldTypeException(variable, e.unknownType);
           }
@@ -548,7 +551,7 @@ public class ClassInfoParser {
     return parameterInfo.filter(new Predicate<ParameterInfo>() {
       @Override public boolean apply(ParameterInfo input) {
         return input.name.equals(field.getSimpleName().toString())
-            && processingEnv.getTypeUtils().isAssignable(input.type, field.asType());
+            && isEqualIgnoringWildcards(input.type, field.asType());
       }
     }).transform(new Function<ParameterInfo, VariableElement>() {
       @Override public VariableElement apply(ParameterInfo input) {
@@ -557,15 +560,20 @@ public class ClassInfoParser {
     }).first().orNull();
   }
 
-  private AdapterInfo parseAdapterInfo(TypeMirror type)
+  private AdapterInfo parseAdapterInfo(TypeMirror type, Map<TypeName, String> scopedTypeAdapters)
       throws UnknownTypeException, TooManyConstructorsException,
       InvalidConstructorException {
+
+    if (type instanceof WildcardType) {
+      // Wildcards are currently not supported
+      throw new UnknownTypeException(type);
+    }
 
     Types types = processingEnv.getTypeUtils();
     Elements elements = processingEnv.getElementUtils();
 
     TypeMirror erasedType = types.erasure(type);
-    String elementName = adapters.get(TypeName.get(erasedType));
+    String elementName = scopedTypeAdapters.get(TypeName.get(erasedType));
     if (elementName == null) {
       throw new UnknownTypeException(erasedType);
     }
@@ -592,34 +600,47 @@ public class ClassInfoParser {
       throw new TooManyConstructorsException(element);
     }
 
-    DeclaredType declaredType = (DeclaredType) type;
-    List<? extends TypeMirror> typeArgumentsList = declaredType.getTypeArguments();
-    TypeMirror[] typeArgumentsArray = new TypeMirror[typeArgumentsList.size()];
-    typeArgumentsList.toArray(typeArgumentsArray);
-    DeclaredType declaredTypeAdapterType = types.getDeclaredType(element, typeArgumentsArray);
-
     List<AdapterInfo> dependencies = new ArrayList<>();
-    if (visibleTypeAdapterConstructors.size() > 0) {
+    ExecutableType constructorType = null;
+    TypeName adapterTypeName;
+    if (type instanceof DeclaredType) {
+      DeclaredType declaredType = (DeclaredType) type;
+      List<? extends TypeMirror> typeArgumentsList = declaredType.getTypeArguments();
+      TypeMirror[] typeArgumentsArray = new TypeMirror[typeArgumentsList.size()];
+      typeArgumentsList.toArray(typeArgumentsArray);
+      DeclaredType declaredTypeAdapterType = types.getDeclaredType(element, typeArgumentsArray);
+      adapterTypeName = TypeName.get(declaredTypeAdapterType);
+      if (visibleTypeAdapterConstructors.size() > 0) {
+        ExecutableElement constructor = visibleTypeAdapterConstructors.get(0);
+        constructorType = (ExecutableType) types.asMemberOf(declaredTypeAdapterType, constructor);
+      }
+    } else {
+      adapterTypeName = TypeName.get(type);
+      if (visibleTypeAdapterConstructors.size() > 0) {
+        ExecutableElement constructor = visibleTypeAdapterConstructors.get(0);
+        constructorType = MoreTypes.asExecutable(constructor.asType());
+      }
+    }
+
+    if (constructorType != null) {
       ExecutableElement constructor = visibleTypeAdapterConstructors.get(0);
-      ExecutableType constructorType =
-          (ExecutableType) types.asMemberOf(declaredTypeAdapterType, constructor);
       for (TypeMirror param : constructorType.getParameterTypes()) {
         TypeMirror erasedParamType = types.erasure(param);
         if (!types.isAssignable(erasedParamType, typeAdapterType)) {
           throw new InvalidConstructorException(constructor);
         }
-        List<? extends TypeMirror> typeAdapterArguments = getArgumentsOfClassFromType(types, param,
-            TypeAdapter.class);
+        List<? extends TypeMirror> typeAdapterArguments =
+            getArgumentsOfClassFromType(types, param, TypeAdapter.class);
         if (typeAdapterArguments == null) {
           throw new AssertionError("TypeAdapter should have a type argument: " + param);
         }
-        dependencies.add(parseAdapterInfo(typeAdapterArguments.get(0)));
+        dependencies.add(parseAdapterInfo(typeAdapterArguments.get(0), scopedTypeAdapters));
       }
     }
 
     boolean singleton = isSingleton(types, element);
 
-    return new AdapterInfo(dependencies, TypeName.get(declaredTypeAdapterType), singleton);
+    return new AdapterInfo(dependencies, adapterTypeName, singleton);
   }
 
   public static class DuplicateFieldNameException extends Exception {

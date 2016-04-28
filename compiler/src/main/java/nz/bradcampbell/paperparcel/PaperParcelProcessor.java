@@ -26,6 +26,7 @@ import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
 import nz.bradcampbell.paperparcel.model.ClassInfo;
 import nz.bradcampbell.paperparcel.typeadapters.BundleAdapter;
+import nz.bradcampbell.paperparcel.typeadapters.DateAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.IntegerAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.ListAdapter;
 
@@ -47,6 +48,7 @@ public class PaperParcelProcessor extends AbstractProcessor {
           .add(IntegerAdapter.class)
           .add(BundleAdapter.class)
           .add(ListAdapter.class)
+          .add(DateAdapter.class)
           .build();
 
   private final Set<TypeElement> unprocessedTypes = new LinkedHashSet<>();
