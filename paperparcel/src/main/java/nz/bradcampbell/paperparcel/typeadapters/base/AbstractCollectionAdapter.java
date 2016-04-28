@@ -5,10 +5,10 @@ import java.util.Collection;
 import nz.bradcampbell.paperparcel.TypeAdapter;
 import org.jetbrains.annotations.NotNull;
 
-public abstract class CollectionAdapter<C extends Collection<T>, T> extends AbstractAdapter<C> {
+public abstract class AbstractCollectionAdapter<C extends Collection<T>, T> extends AbstractAdapter<C> {
   protected final TypeAdapter<T> itemAdapter;
 
-  public CollectionAdapter(TypeAdapter<T> itemAdapter) {
+  public AbstractCollectionAdapter(TypeAdapter<T> itemAdapter) {
     this.itemAdapter = itemAdapter;
   }
 

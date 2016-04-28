@@ -3,9 +3,9 @@ package nz.bradcampbell.paperparcel.typeadapters;
 import java.util.ArrayList;
 import java.util.List;
 import nz.bradcampbell.paperparcel.TypeAdapter;
-import nz.bradcampbell.paperparcel.typeadapters.base.CollectionAdapter;
+import nz.bradcampbell.paperparcel.typeadapters.base.AbstractCollectionAdapter;
 
-public final class ListAdapter<T> extends CollectionAdapter<List<T>, T> {
+public final class ListAdapter<T> extends AbstractCollectionAdapter<List<T>, T> {
   public ListAdapter(TypeAdapter<T> itemAdapter) {
     super(itemAdapter);
   }

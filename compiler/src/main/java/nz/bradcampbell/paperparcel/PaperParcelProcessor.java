@@ -25,10 +25,27 @@ import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
 import nz.bradcampbell.paperparcel.model.ClassInfo;
+import nz.bradcampbell.paperparcel.typeadapters.BooleanAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.BundleAdapter;
+import nz.bradcampbell.paperparcel.typeadapters.ByteAdapter;
+import nz.bradcampbell.paperparcel.typeadapters.CharSequenceAdapter;
+import nz.bradcampbell.paperparcel.typeadapters.CharacterAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.DateAdapter;
+import nz.bradcampbell.paperparcel.typeadapters.DoubleAdapter;
+import nz.bradcampbell.paperparcel.typeadapters.FloatAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.IntegerAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.ListAdapter;
+import nz.bradcampbell.paperparcel.typeadapters.LongAdapter;
+import nz.bradcampbell.paperparcel.typeadapters.MapAdapter;
+import nz.bradcampbell.paperparcel.typeadapters.ParcelableAdapter;
+import nz.bradcampbell.paperparcel.typeadapters.PersistableBundleAdapter;
+import nz.bradcampbell.paperparcel.typeadapters.QueueAdapter;
+import nz.bradcampbell.paperparcel.typeadapters.SetAdapter;
+import nz.bradcampbell.paperparcel.typeadapters.ShortAdapter;
+import nz.bradcampbell.paperparcel.typeadapters.SizeAdapter;
+import nz.bradcampbell.paperparcel.typeadapters.SizeFAdapter;
+import nz.bradcampbell.paperparcel.typeadapters.SparseArrayAdapter;
+import nz.bradcampbell.paperparcel.typeadapters.StringAdapter;
 
 import static nz.bradcampbell.paperparcel.PaperParcels.DELEGATE_SUFFIX;
 import static nz.bradcampbell.paperparcel.PaperParcels.WRAPPER_SUFFIX;
@@ -45,12 +62,39 @@ public class PaperParcelProcessor extends AbstractProcessor {
 
   private Set<Class<? extends TypeAdapter>> builtInAdapters =
       ImmutableSet.<Class<? extends TypeAdapter>>builder()
+
+          // Boxed primitives
+          .add(BooleanAdapter.class)
+          .add(ByteAdapter.class)
+          .add(CharacterAdapter.class)
+          .add(DoubleAdapter.class)
+          .add(FloatAdapter.class)
           .add(IntegerAdapter.class)
-          .add(BundleAdapter.class)
+          .add(LongAdapter.class)
+          .add(ShortAdapter.class)
+
+          // Java language types
+          .add(CharSequenceAdapter.class)
+          .add(StringAdapter.class)
+
+          // Java util types
           .add(ListAdapter.class)
+          .add(SetAdapter.class)
+          .add(QueueAdapter.class)
+          .add(MapAdapter.class)
           .add(DateAdapter.class)
+
+          // Android sdk types
+          .add(BundleAdapter.class)
+          .add(ParcelableAdapter.class)
+          .add(PersistableBundleAdapter.class)
+          .add(SizeFAdapter.class)
+          .add(SizeAdapter.class)
+          .add(SparseArrayAdapter.class)
+
           .build();
 
+  // TODO: this might need to be a Set<String> due to https://bugs.openjdk.java.net/browse/JDK-8144105
   private final Set<TypeElement> unprocessedTypes = new LinkedHashSet<>();
 
   private final Map<ClassName, ClassName> wrappers = new LinkedHashMap<>();
