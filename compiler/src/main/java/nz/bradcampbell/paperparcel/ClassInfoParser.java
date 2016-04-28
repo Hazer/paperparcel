@@ -634,6 +634,9 @@ public class ClassInfoParser {
         if (typeAdapterArguments == null) {
           throw new AssertionError("TypeAdapter should have a type argument: " + param);
         }
+        // TODO:
+        // add validation for number of type arguments! Don't allow raw types otherwise
+        // we crash here
         dependencies.add(parseAdapterInfo(typeAdapterArguments.get(0), scopedTypeAdapters));
       }
     }

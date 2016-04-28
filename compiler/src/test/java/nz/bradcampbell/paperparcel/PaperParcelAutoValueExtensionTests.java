@@ -11,7 +11,7 @@ import static com.google.common.truth.Truth.assertAbout;
 import static com.google.testing.compile.JavaSourceSubjectFactory.javaSource;
 import static com.google.testing.compile.JavaSourcesSubjectFactory.javaSources;
 
-public class AutoValueTests {
+public class PaperParcelAutoValueExtensionTests {
 
   @Test public void basicAutoValueTest() throws Exception {
     JavaFileObject source =
@@ -92,8 +92,7 @@ public class AutoValueTests {
             "    return 0;",
             "  }",
             "  @Override public void writeToParcel(Parcel dest, int flags) {",
-            "    int count = this.data.count();",
-            "    dest.writeInt(count);",
+            "    dest.writeInt(this.data.count());",
             "  }",
             "}"
         ));
@@ -186,7 +185,7 @@ public class AutoValueTests {
             "  }",
             "  @Override",
             "  public void writeToParcel(Parcel dest, int flags) {",
-            "    int count = this.data.count();", "dest.writeInt(count);",
+            "    dest.writeInt(this.data.count());",
             "  }",
             "}"
         ));
@@ -338,11 +337,8 @@ public class AutoValueTests {
             "      new Parcelable.Creator<AutoValue_Test$$Wrapper>() {",
             "    @Override public AutoValue_Test$$Wrapper createFromParcel(Parcel in) {",
             "      DateTypeAdapter dateTypeAdapter = new DateTypeAdapter();",
-            "      Date outTest = null;",
-            "      if (in.readInt() == 0) {",
-            "        outTest = dateTypeAdapter.readFromParcel(in);",
-            "      }",
-            "      AutoValue_Test data = new AutoValue_Test(outTest);",
+            "      Date test = dateTypeAdapter.readFromParcel(in);",
+            "      AutoValue_Test data = new AutoValue_Test(test);",
             "      return new AutoValue_Test$$Wrapper(data);",
             "    }",
             "    @Override public AutoValue_Test$$Wrapper[] newArray(int size) {",
@@ -361,13 +357,7 @@ public class AutoValueTests {
             "  }",
             "  @Override public void writeToParcel(Parcel dest, int flags) {",
             "    DateTypeAdapter dateTypeAdapter = new DateTypeAdapter();",
-            "    Date test = this.data.test();",
-            "    if (test == null) {",
-            "      dest.writeInt(1);",
-            "    } else {",
-            "      dest.writeInt(0);",
-            "      dateTypeAdapter.writeToParcel(test, dest, flags);",
-            "    }",
+            "    dateTypeAdapter.writeToParcel(this.data.test(), dest, flags);",
             "  }",
             "}"
         ));
