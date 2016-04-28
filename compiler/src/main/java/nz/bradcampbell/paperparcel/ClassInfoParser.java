@@ -27,6 +27,7 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.ExecutableType;
 import javax.lang.model.type.MirroredTypeException;
@@ -604,7 +605,7 @@ public class ClassInfoParser {
     ExecutableType constructorType = null;
     TypeName adapterTypeName;
     if (type instanceof DeclaredType) {
-      DeclaredType declaredType = (DeclaredType) type;
+      DeclaredType declaredType = MoreTypes.asDeclared(type);
       List<? extends TypeMirror> typeArgumentsList = declaredType.getTypeArguments();
       TypeMirror[] typeArgumentsArray = new TypeMirror[typeArgumentsList.size()];
       typeArgumentsList.toArray(typeArgumentsArray);
@@ -614,12 +615,14 @@ public class ClassInfoParser {
         ExecutableElement constructor = visibleTypeAdapterConstructors.get(0);
         constructorType = (ExecutableType) types.asMemberOf(declaredTypeAdapterType, constructor);
       }
-    } else {
-      adapterTypeName = TypeName.get(type);
+    } else if (type instanceof ArrayType) {
+      adapterTypeName = TypeName.get(element.asType());
       if (visibleTypeAdapterConstructors.size() > 0) {
         ExecutableElement constructor = visibleTypeAdapterConstructors.get(0);
         constructorType = MoreTypes.asExecutable(constructor.asType());
       }
+    } else {
+      throw new AssertionError("Unknown type kind " + type.getKind() + " from " + type);
     }
 
     if (constructorType != null) {
@@ -634,8 +637,7 @@ public class ClassInfoParser {
         if (typeAdapterArguments == null) {
           throw new AssertionError("TypeAdapter should have a type argument: " + param);
         }
-        // TODO:
-        // add validation for number of type arguments! Don't allow raw types otherwise
+        // TODO: add validation for number of type arguments! Don't allow raw types otherwise
         // we crash here
         dependencies.add(parseAdapterInfo(typeAdapterArguments.get(0), scopedTypeAdapters));
       }

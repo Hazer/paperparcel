@@ -26,16 +26,23 @@ import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
 import nz.bradcampbell.paperparcel.model.ClassInfo;
 import nz.bradcampbell.paperparcel.typeadapters.BooleanAdapter;
+import nz.bradcampbell.paperparcel.typeadapters.BooleanArrayAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.BundleAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.ByteAdapter;
+import nz.bradcampbell.paperparcel.typeadapters.ByteArrayAdapter;
+import nz.bradcampbell.paperparcel.typeadapters.CharArrayAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.CharSequenceAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.CharacterAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.DateAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.DoubleAdapter;
+import nz.bradcampbell.paperparcel.typeadapters.DoubleArrayAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.FloatAdapter;
+import nz.bradcampbell.paperparcel.typeadapters.FloatArrayAdapter;
+import nz.bradcampbell.paperparcel.typeadapters.IntArrayAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.IntegerAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.ListAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.LongAdapter;
+import nz.bradcampbell.paperparcel.typeadapters.LongArrayAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.MapAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.ParcelableAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.PersistableBundleAdapter;
@@ -46,6 +53,7 @@ import nz.bradcampbell.paperparcel.typeadapters.SizeAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.SizeFAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.SparseArrayAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.StringAdapter;
+import nz.bradcampbell.paperparcel.typeadapters.ShortArrayAdapter;
 
 import static nz.bradcampbell.paperparcel.PaperParcels.DELEGATE_SUFFIX;
 import static nz.bradcampbell.paperparcel.PaperParcels.WRAPPER_SUFFIX;
@@ -72,6 +80,16 @@ public class PaperParcelProcessor extends AbstractProcessor {
           .add(IntegerAdapter.class)
           .add(LongAdapter.class)
           .add(ShortAdapter.class)
+
+          // Primitive arrays
+          .add(BooleanArrayAdapter.class)
+          .add(ByteArrayAdapter.class)
+          .add(CharArrayAdapter.class)
+          .add(DoubleArrayAdapter.class)
+          .add(FloatArrayAdapter.class)
+          .add(IntArrayAdapter.class)
+          .add(LongArrayAdapter.class)
+          .add(ShortArrayAdapter.class)
 
           // Java language types
           .add(CharSequenceAdapter.class)
