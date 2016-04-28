@@ -15,8 +15,13 @@ buildscript {
 }
 
 dependencies {
-    provided files('libs/android.jar')
     provided deps.intellijAnnotations
+
+    testCompile deps.junit
+    testCompile deps.truth
+    testCompile deps.robolectric
+
+    provided files('libs/android.jar')
 }
 
 apply from: rootProject.file('gradle/jitpack-push.gradle')
