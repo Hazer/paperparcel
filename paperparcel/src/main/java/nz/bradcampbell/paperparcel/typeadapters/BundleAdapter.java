@@ -6,11 +6,15 @@ import nz.bradcampbell.paperparcel.typeadapters.base.AbstractAdapter;
 import org.jetbrains.annotations.NotNull;
 
 public class BundleAdapter extends AbstractAdapter<Bundle> {
-  @NotNull @Override public Bundle readFromParcelInner(@NotNull Parcel source) {
+  @NotNull @Override protected Bundle read(@NotNull Parcel source) {
     return source.readBundle(BundleAdapter.class.getClassLoader());
   }
 
-  @Override public void writeToParcelInner(@NotNull Bundle value, @NotNull Parcel dest, int flags) {
+  @Override protected void write(@NotNull Bundle value, @NotNull Parcel dest, int flags) {
     dest.writeBundle(value);
+  }
+
+  @NotNull @Override public Bundle[] newArray(int length) {
+    return new Bundle[length];
   }
 }

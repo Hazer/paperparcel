@@ -63,6 +63,7 @@ public class PaperParcelProcessorTests {
             "  public int[] bh;",
             "  public long[] bi;",
             "  public short[] bj;",
+            "  public String[] bk;",
             "}"
         ));
 
@@ -120,6 +121,7 @@ public class PaperParcelProcessorTests {
             "import nz.bradcampbell.paperparcel.typeadapters.SizeFAdapter;",
             "import nz.bradcampbell.paperparcel.typeadapters.SparseArrayAdapter;",
             "import nz.bradcampbell.paperparcel.typeadapters.StringAdapter;",
+            "import nz.bradcampbell.paperparcel.typeadapters.StringArrayAdapter;",
             "public final class Test$$Wrapper implements ParcelableWrapper<Test> {",
             "  public static final Parcelable.Creator<Test$$Wrapper> CREATOR = ",
             "      new Parcelable.Creator<Test$$Wrapper>() {",
@@ -152,6 +154,7 @@ public class PaperParcelProcessorTests {
             "      IntArrayAdapter intArrayAdapter = new IntArrayAdapter();",
             "      LongArrayAdapter longArrayAdapter = new LongArrayAdapter();",
             "      ShortArrayAdapter shortArrayAdapter = new ShortArrayAdapter();",
+            "      StringArrayAdapter stringArrayAdapter = new StringArrayAdapter();",
             "      boolean aa = in.readInt() == 1;",
             "      Boolean ab = booleanAdapter.readFromParcel(in);",
             "      byte ac = in.readByte();",
@@ -188,6 +191,7 @@ public class PaperParcelProcessorTests {
             "      int[] bh = intArrayAdapter.readFromParcel(in);",
             "      long[] bi = longArrayAdapter.readFromParcel(in);",
             "      short[] bj = shortArrayAdapter.readFromParcel(in);",
+            "      String[] bk = stringArrayAdapter.readFromParcel(in);",
             "      Test data = new Test();",
             "      data.aa = aa;",
             "      data.ab = ab;",
@@ -225,6 +229,7 @@ public class PaperParcelProcessorTests {
             "      data.bh = bh;",
             "      data.bi = bi;",
             "      data.bj = bj;",
+            "      data.bk = bk;",
             "      return new Test$$Wrapper(data);",
             "    }",
             "    @Override public Test$$Wrapper[] newArray(int size) {",
@@ -273,6 +278,7 @@ public class PaperParcelProcessorTests {
             "    IntArrayAdapter intArrayAdapter = new IntArrayAdapter();",
             "    LongArrayAdapter longArrayAdapter = new LongArrayAdapter();",
             "    ShortArrayAdapter shortArrayAdapter = new ShortArrayAdapter();",
+            "    StringArrayAdapter stringArrayAdapter = new StringArrayAdapter();",
             "    dest.writeInt(this.data.aa ? 1 : 0);",
             "    booleanAdapter.writeToParcel(this.data.ab, dest, flags);",
             "    dest.writeByte(this.data.ac);",
@@ -309,6 +315,7 @@ public class PaperParcelProcessorTests {
             "    intArrayAdapter.writeToParcel(this.data.bh, dest, flags);",
             "    longArrayAdapter.writeToParcel(this.data.bi, dest, flags);",
             "    shortArrayAdapter.writeToParcel(this.data.bj, dest, flags);",
+            "    stringArrayAdapter.writeToParcel(this.data.bk, dest, flags);",
             "  }",
             "}"
         ));

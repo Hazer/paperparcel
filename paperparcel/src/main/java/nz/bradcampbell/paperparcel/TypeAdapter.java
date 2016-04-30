@@ -28,4 +28,12 @@ public interface TypeAdapter<T> {
    * {@link android.os.Parcelable#PARCELABLE_WRITE_RETURN_VALUE}.
    */
   void writeToParcel(@Nullable T value, @NotNull Parcel dest, int flags);
+
+  /**
+   * Creates a new array of nulls of the type adapter type
+   *
+   * @param length The size of the array
+   * @return The initialized array
+   */
+  @NotNull T[] newArray(int length);
 }

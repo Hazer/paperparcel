@@ -9,21 +9,21 @@ public abstract class AbstractAdapter<T> implements TypeAdapter<T> {
   @Nullable @Override public final T readFromParcel(@NotNull Parcel source) {
     T value = null;
     if (source.readInt() == 1) {
-      value = readFromParcelInner(source);
+      value = read(source);
     }
     return value;
   }
 
-  @NotNull public abstract T readFromParcelInner(@NotNull Parcel source);
+  @NotNull protected abstract T read(@NotNull Parcel source);
 
   @Override public final void writeToParcel(@Nullable T value, @NotNull Parcel dest, int flags) {
     if (value == null) {
       dest.writeInt(0);
     } else {
       dest.writeInt(1);
-      writeToParcelInner(value, dest, flags);
+      write(value, dest, flags);
     }
   }
 
-  public abstract void writeToParcelInner(@NotNull T value, @NotNull Parcel dest, int flags);
+  protected abstract void write(@NotNull T value, @NotNull Parcel dest, int flags);
 }

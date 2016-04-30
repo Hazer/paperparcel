@@ -6,12 +6,16 @@ import nz.bradcampbell.paperparcel.typeadapters.base.AbstractAdapter;
 import org.jetbrains.annotations.NotNull;
 
 public final class DateAdapter extends AbstractAdapter<Date> {
-  @NotNull @Override public Date readFromParcelInner(@NotNull Parcel source) {
+  @NotNull @Override protected Date read(@NotNull Parcel source) {
     return new Date(source.readLong());
   }
 
   @Override
-  public void writeToParcelInner(@NotNull Date value, @NotNull Parcel dest, int flags) {
+  protected void write(@NotNull Date value, @NotNull Parcel dest, int flags) {
     dest.writeLong(value.getTime());
+  }
+
+  @NotNull @Override public Date[] newArray(int length) {
+    return new Date[length];
   }
 }

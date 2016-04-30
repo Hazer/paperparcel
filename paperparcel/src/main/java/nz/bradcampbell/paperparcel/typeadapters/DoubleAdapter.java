@@ -5,12 +5,16 @@ import nz.bradcampbell.paperparcel.typeadapters.base.AbstractAdapter;
 import org.jetbrains.annotations.NotNull;
 
 public class DoubleAdapter extends AbstractAdapter<Double> {
-  @NotNull @Override public Double readFromParcelInner(@NotNull Parcel source) {
+  @NotNull @Override protected Double read(@NotNull Parcel source) {
     return source.readDouble();
   }
 
   @Override
-  public void writeToParcelInner(@NotNull Double value, @NotNull Parcel dest, int flags) {
+  protected void write(@NotNull Double value, @NotNull Parcel dest, int flags) {
     dest.writeDouble(value);
+  }
+
+  @NotNull @Override public Double[] newArray(int length) {
+    return new Double[length];
   }
 }

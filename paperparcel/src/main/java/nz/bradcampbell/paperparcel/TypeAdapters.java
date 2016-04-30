@@ -21,5 +21,5 @@ import static java.lang.annotation.RetentionPolicy.CLASS;
  */
 @Documented @Retention(CLASS) @Target({ FIELD, METHOD, TYPE })
 public @interface TypeAdapters {
-  Class<? extends TypeAdapter<?>>[] value() default {};
+  Class<? extends TypeAdapter>[] value() default {};
 }

@@ -79,13 +79,8 @@ public class WrapperGenerator {
       Map<AdapterInfo, String> adapterNameMap = initializeTypeAdaptersForFields(block, fields);
 
       for (FieldInfo field : fields) {
-        TypeName fieldTypeName = field.getTypeName();
-        if (fieldTypeName.isPrimitive()) {
-          readPrimitiveType(block, field, in);
-        } else {
-          block.addStatement("$T $N = $N.readFromParcel($N)", fieldTypeName, field.getName(),
-              adapterNameMap.get(field.getAdapterInfo()), in);
-        }
+        String adapterName = adapterNameMap.get(field.getAdapterInfo());
+        readField(block, adapterName, field.getName(), field.getTypeName(), in);
       }
 
       final String fieldName = PaperParcelProcessor.DATA_VARIABLE_NAME;
@@ -199,15 +194,29 @@ public class WrapperGenerator {
       String accessorStrategy = field.isVisible() ?
           field.getName() : field.getGetterMethodName() + "()";
       CodeBlock value = CodeBlock.of("$N.$N", "this." + DATA_VARIABLE_NAME, accessorStrategy);
-      if (field.getTypeName().isPrimitive()) {
-        writePrimitiveType(block, value, field, dest);
-      } else {
-        String adapterName = adapterNameMap.get(field.getAdapterInfo());
-        block.addStatement("$N.writeToParcel($L, $N, $N)", adapterName, value, dest, flags);
-      }
+      String adapterName = adapterNameMap.get(field.getAdapterInfo());
+      writeField(block, adapterName, value, field.getTypeName(), dest, flags);
     }
 
     return builder.addCode(block.build()).build();
+  }
+
+  private void readField(CodeBlock.Builder block, String adapterName, String name,
+      TypeName typeName, ParameterSpec in) {
+    if (typeName.isPrimitive()) {
+      readPrimitiveType(block, typeName, name, in);
+    } else {
+      block.addStatement("$T $N = $N.readFromParcel($N)", typeName, name, adapterName, in);
+    }
+  }
+
+  private void writeField(CodeBlock.Builder block, String adapterName, CodeBlock value,
+      TypeName typeName, ParameterSpec dest, ParameterSpec flags) {
+    if (typeName.isPrimitive()) {
+      writePrimitiveType(block, value, typeName, dest);
+    } else {
+      block.addStatement("$N.writeToParcel($L, $N, $N)", adapterName, value, dest, flags);
+    }
   }
 
   private Map<AdapterInfo, String> initializeTypeAdaptersForFields(CodeBlock.Builder block,
@@ -289,32 +298,31 @@ public class WrapperGenerator {
     return adapterName;
   }
 
-  private void readPrimitiveType(CodeBlock.Builder block, FieldInfo field, ParameterSpec in) {
-    TypeName typeName = field.getTypeName();
+  private void readPrimitiveType(CodeBlock.Builder block, TypeName typeName, String name,
+      ParameterSpec in) {
     if (TypeName.INT.equals(typeName)) {
-      block.addStatement("$T $N = $N.readInt()", typeName, field.getName(), in);
+      block.addStatement("$T $N = $N.readInt()", typeName, name, in);
     } else if (TypeName.BOOLEAN.equals(typeName)) {
-      block.addStatement("$T $N = $N.readInt() == 1", typeName, field.getName(), in);
+      block.addStatement("$T $N = $N.readInt() == 1", typeName, name, in);
     } else if (TypeName.BYTE.equals(typeName)) {
-      block.addStatement("$T $N = $N.readByte()", typeName, field.getName(), in);
+      block.addStatement("$T $N = $N.readByte()", typeName, name, in);
     } else if (TypeName.CHAR.equals(typeName)) {
-      block.addStatement("$T $N = (char) $N.readInt()", typeName, field.getName(), in);
+      block.addStatement("$T $N = (char) $N.readInt()", typeName, name, in);
     } else if (TypeName.DOUBLE.equals(typeName)) {
-      block.addStatement("$T $N = $N.readDouble()", typeName, field.getName(), in);
+      block.addStatement("$T $N = $N.readDouble()", typeName, name, in);
     } else if (TypeName.FLOAT.equals(typeName)) {
-      block.addStatement("$T $N = $N.readFloat()", typeName, field.getName(), in);
+      block.addStatement("$T $N = $N.readFloat()", typeName, name, in);
     } else if (TypeName.LONG.equals(typeName)) {
-      block.addStatement("$T $N = $N.readLong()", typeName, field.getName(), in);
+      block.addStatement("$T $N = $N.readLong()", typeName, name, in);
     } else if (TypeName.SHORT.equals(typeName)) {
-      block.addStatement("$T $N = (short) $N.readInt()", typeName, field.getName(), in);
+      block.addStatement("$T $N = (short) $N.readInt()", typeName, name, in);
     } else {
       throw new AssertionError("Unknown primitive type " + typeName);
     }
   }
 
-  private void writePrimitiveType(CodeBlock.Builder block, CodeBlock value, FieldInfo field,
+  private void writePrimitiveType(CodeBlock.Builder block, CodeBlock value, TypeName typeName,
       ParameterSpec dest) {
-    TypeName typeName = field.getTypeName();
     if (TypeName.INT.equals(typeName)) {
       block.addStatement("$N.writeInt($L)", dest, value);
     } else if (TypeName.BOOLEAN.equals(typeName)) {

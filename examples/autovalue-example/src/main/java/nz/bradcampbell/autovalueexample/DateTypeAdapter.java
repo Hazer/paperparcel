@@ -13,4 +13,8 @@ public class DateTypeAdapter implements TypeAdapter<Date> {
   @Override public void writeToParcel(@NotNull Date value, @NotNull Parcel outParcel, int flags) {
     outParcel.writeLong(value.getTime());
   }
+
+  @NotNull @Override public Date[] newArray(int length) {
+    return new Date[length];
+  }
 }

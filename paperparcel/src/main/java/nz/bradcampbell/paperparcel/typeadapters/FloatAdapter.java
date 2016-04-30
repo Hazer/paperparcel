@@ -5,12 +5,16 @@ import nz.bradcampbell.paperparcel.typeadapters.base.AbstractAdapter;
 import org.jetbrains.annotations.NotNull;
 
 public class FloatAdapter extends AbstractAdapter<Float> {
-  @NotNull @Override public Float readFromParcelInner(@NotNull Parcel source) {
+  @NotNull @Override protected Float read(@NotNull Parcel source) {
     return source.readFloat();
   }
 
   @Override
-  public void writeToParcelInner(@NotNull Float value, @NotNull Parcel dest, int flags) {
+  protected void write(@NotNull Float value, @NotNull Parcel dest, int flags) {
     dest.writeFloat(value);
+  }
+
+  @NotNull @Override public Float[] newArray(int length) {
+    return new Float[length];
   }
 }

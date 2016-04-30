@@ -5,12 +5,16 @@ import nz.bradcampbell.paperparcel.typeadapters.base.AbstractAdapter;
 import org.jetbrains.annotations.NotNull;
 
 public class StringAdapter extends AbstractAdapter<String> {
-  @NotNull @Override public String readFromParcelInner(@NotNull Parcel source) {
+  @NotNull @Override public String read(@NotNull Parcel source) {
     return source.readString();
   }
 
   @Override
-  public void writeToParcelInner(@NotNull String value, @NotNull Parcel dest, int flags) {
+  protected void write(@NotNull String value, @NotNull Parcel dest, int flags) {
     dest.writeString(value);
+  }
+
+  @NotNull @Override public String[] newArray(int length) {
+    return new String[length];
   }
 }

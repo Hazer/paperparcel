@@ -5,12 +5,16 @@ import nz.bradcampbell.paperparcel.typeadapters.base.AbstractAdapter;
 import org.jetbrains.annotations.NotNull;
 
 public final class ShortAdapter extends AbstractAdapter<Short> {
-  @NotNull @Override public Short readFromParcelInner(@NotNull Parcel source) {
+  @NotNull @Override public Short read(@NotNull Parcel source) {
     return (short) source.readInt();
   }
 
   @Override
-  public void writeToParcelInner(@NotNull Short value, @NotNull Parcel dest, int flags) {
+  protected void write(@NotNull Short value, @NotNull Parcel dest, int flags) {
     dest.writeInt(value);
+  }
+
+  @NotNull @Override public Short[] newArray(int length) {
+    return new Short[length];
   }
 }

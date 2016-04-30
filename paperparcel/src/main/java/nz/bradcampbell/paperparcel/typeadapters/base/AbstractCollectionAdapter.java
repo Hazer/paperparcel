@@ -12,7 +12,7 @@ public abstract class AbstractCollectionAdapter<C extends Collection<T>, T> exte
     this.itemAdapter = itemAdapter;
   }
 
-  @NotNull @Override public C readFromParcelInner(@NotNull Parcel source) {
+  @NotNull @Override protected C read(@NotNull Parcel source) {
     int size = source.readInt();
     C collection = newCollection(size);
     for (int i = 0; i < size; i++) {
@@ -22,12 +22,12 @@ public abstract class AbstractCollectionAdapter<C extends Collection<T>, T> exte
   }
 
   @Override
-  public void writeToParcelInner(@NotNull C value, @NotNull Parcel dest, int flags) {
+  protected void write(@NotNull C value, @NotNull Parcel dest, int flags) {
     dest.writeInt(value.size());
     for (T item : value) {
       itemAdapter.writeToParcel(item, dest, flags);
     }
   }
 
-  public abstract C newCollection(int size);
+  protected abstract C newCollection(int size);
 }

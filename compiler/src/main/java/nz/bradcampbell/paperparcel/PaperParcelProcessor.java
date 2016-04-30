@@ -25,6 +25,7 @@ import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
 import nz.bradcampbell.paperparcel.model.ClassInfo;
+import nz.bradcampbell.paperparcel.typeadapters.ArrayAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.BooleanAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.BooleanArrayAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.BundleAdapter;
@@ -49,11 +50,12 @@ import nz.bradcampbell.paperparcel.typeadapters.PersistableBundleAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.QueueAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.SetAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.ShortAdapter;
+import nz.bradcampbell.paperparcel.typeadapters.ShortArrayAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.SizeAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.SizeFAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.SparseArrayAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.StringAdapter;
-import nz.bradcampbell.paperparcel.typeadapters.ShortArrayAdapter;
+import nz.bradcampbell.paperparcel.typeadapters.StringArrayAdapter;
 
 import static nz.bradcampbell.paperparcel.PaperParcels.DELEGATE_SUFFIX;
 import static nz.bradcampbell.paperparcel.PaperParcels.WRAPPER_SUFFIX;
@@ -81,7 +83,8 @@ public class PaperParcelProcessor extends AbstractProcessor {
           .add(LongAdapter.class)
           .add(ShortAdapter.class)
 
-          // Primitive arrays
+          // Arrays
+          .add(ArrayAdapter.class)
           .add(BooleanArrayAdapter.class)
           .add(ByteArrayAdapter.class)
           .add(CharArrayAdapter.class)
@@ -90,6 +93,7 @@ public class PaperParcelProcessor extends AbstractProcessor {
           .add(IntArrayAdapter.class)
           .add(LongArrayAdapter.class)
           .add(ShortArrayAdapter.class)
+          .add(StringArrayAdapter.class)
 
           // Java language types
           .add(CharSequenceAdapter.class)

@@ -14,7 +14,7 @@ public abstract class AbstractMapAdapter<M extends Map<K, V>, K, V> extends Abst
     this.valueAdapter = valueAdapter;
   }
 
-  @NotNull @Override public M readFromParcelInner(@NotNull Parcel source) {
+  @NotNull @Override protected M read(@NotNull Parcel source) {
     int size = source.readInt();
     M map = newMap(size);
     for (int i = 0; i < size; i++) {
@@ -24,7 +24,7 @@ public abstract class AbstractMapAdapter<M extends Map<K, V>, K, V> extends Abst
   }
 
   @Override
-  public void writeToParcelInner(@NotNull M value, @NotNull Parcel dest, int flags) {
+  protected void write(@NotNull M value, @NotNull Parcel dest, int flags) {
     dest.writeInt(value.size());
     for (Map.Entry<K, V> entry : value.entrySet()) {
       keyAdapter.writeToParcel(entry.getKey(), dest, flags);
@@ -32,5 +32,5 @@ public abstract class AbstractMapAdapter<M extends Map<K, V>, K, V> extends Abst
     }
   }
 
-  public abstract M newMap(int size);
+  protected abstract M newMap(int size);
 }

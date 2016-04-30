@@ -5,11 +5,15 @@ import nz.bradcampbell.paperparcel.typeadapters.base.AbstractAdapter
 import java.util.*
 
 object DateTypeAdapter : AbstractAdapter<Date>() {
-  override fun writeToParcelInner(value: Date, dest: Parcel, flags: Int) {
+  override fun write(value: Date, dest: Parcel, flags: Int) {
     dest.writeLong(value.time);
   }
 
-  override fun readFromParcelInner(source: Parcel): Date {
+  override fun read(source: Parcel): Date {
     return Date(source.readLong())
+  }
+
+  override fun newArray(length: Int): Array<Date?> {
+    return arrayOfNulls(length)
   }
 }

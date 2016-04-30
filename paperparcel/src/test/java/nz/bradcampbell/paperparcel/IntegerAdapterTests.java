@@ -1,6 +1,7 @@
-package nz.bradcampbell.paperparcel.typeadapters;
+package nz.bradcampbell.paperparcel;
 
 import android.os.Parcel;
+import nz.bradcampbell.paperparcel.typeadapters.IntegerAdapter;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
@@ -14,9 +15,11 @@ public class IntegerAdapterTests {
   @Test public void integersAreCorrectlyParcelled() {
     IntegerAdapter integerAdapter = new IntegerAdapter();
     Parcel parcel = Parcel.obtain();
-    integerAdapter.writeToParcelInner(42, parcel, 0);
+    Integer expected = 42;
+    integerAdapter.writeToParcel(expected, parcel, 0);
     parcel.setDataPosition(0);
-    assertThat(integerAdapter.readFromParcelInner(parcel)).isEqualTo(42);
+    Integer result = integerAdapter.readFromParcel(parcel);
     parcel.recycle();
+    assertThat(expected).isEqualTo(result);
   }
 }

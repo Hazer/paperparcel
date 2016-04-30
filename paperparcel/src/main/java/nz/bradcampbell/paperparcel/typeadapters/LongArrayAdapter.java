@@ -5,12 +5,16 @@ import nz.bradcampbell.paperparcel.typeadapters.base.AbstractAdapter;
 import org.jetbrains.annotations.NotNull;
 
 public class LongArrayAdapter extends AbstractAdapter<long[]> {
-  @NotNull @Override public long[] readFromParcelInner(@NotNull Parcel source) {
+  @NotNull @Override protected long[] read(@NotNull Parcel source) {
     return source.createLongArray();
   }
 
   @Override
-  public void writeToParcelInner(@NotNull long[] value, @NotNull Parcel dest, int flags) {
+  protected void write(@NotNull long[] value, @NotNull Parcel dest, int flags) {
     dest.writeLongArray(value);
+  }
+
+  @NotNull @Override public long[][] newArray(int length) {
+    return new long[length][];
   }
 }

@@ -5,12 +5,16 @@ import nz.bradcampbell.paperparcel.typeadapters.base.AbstractAdapter;
 import org.jetbrains.annotations.NotNull;
 
 public class BooleanAdapter extends AbstractAdapter<Boolean> {
-  @NotNull @Override public Boolean readFromParcelInner(@NotNull Parcel source) {
+  @NotNull @Override protected Boolean read(@NotNull Parcel source) {
     return source.readInt() == 1;
   }
 
   @Override
-  public void writeToParcelInner(@NotNull Boolean value, @NotNull Parcel dest, int flags) {
+  protected void write(@NotNull Boolean value, @NotNull Parcel dest, int flags) {
     dest.writeInt(value ? 1 : 0);
+  }
+
+  @NotNull @Override public Boolean[] newArray(int length) {
+    return new Boolean[length];
   }
 }

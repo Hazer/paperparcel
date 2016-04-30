@@ -13,7 +13,7 @@ public final class SparseArrayAdapter<T> extends AbstractAdapter<SparseArray<T>>
     this.itemAdapter = itemAdapter;
   }
 
-  @NotNull @Override public SparseArray<T> readFromParcelInner(@NotNull Parcel source) {
+  @NotNull @Override protected SparseArray<T> read(@NotNull Parcel source) {
     int size = source.readInt();
     SparseArray<T> sparseArray = new SparseArray<>(size);
     for (int i = 0; i < size; i++) {
@@ -23,12 +23,16 @@ public final class SparseArrayAdapter<T> extends AbstractAdapter<SparseArray<T>>
   }
 
   @Override
-  public void writeToParcelInner(@NotNull SparseArray<T> value, @NotNull Parcel dest, int flags) {
+  protected void write(@NotNull SparseArray<T> value, @NotNull Parcel dest, int flags) {
     dest.writeInt(value.size());
     for (int i = 0; i < value.size(); i++) {
       int key = value.keyAt(i);
       dest.writeInt(key);
       itemAdapter.writeToParcel(value.get(key), dest, flags);
     }
+  }
+
+  @SuppressWarnings("unchecked") @NotNull @Override public SparseArray<T>[] newArray(int length) {
+    return new SparseArray[length];
   }
 }

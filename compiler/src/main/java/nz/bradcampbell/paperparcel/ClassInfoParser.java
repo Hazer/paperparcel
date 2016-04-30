@@ -8,6 +8,7 @@ import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Ints;
+import com.squareup.javapoet.ArrayTypeName;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.TypeName;
 import java.lang.annotation.Annotation;
@@ -96,7 +97,7 @@ public class ClassInfoParser {
                       + e.element.toString()
                       + " field is "
                       + aOrAn
-                      +  e.element.asType().toString()
+                      + e.element.asType().toString()
                       + " and "
                       + e.unknownType.toString()
                       + " is not a supported PaperParcel type. Define a TypeAdapter<"
@@ -174,10 +175,21 @@ public class ClassInfoParser {
             .printMessage(Diagnostic.Kind.ERROR,
                 "TypeAdapters can only have one constructor",
                 e.element);
-      } catch (InvalidConstructorException e) {
+      } catch (InvalidTypeAdapterConstructorException e) {
         processingEnv.getMessager()
             .printMessage(Diagnostic.Kind.ERROR,
                 "TypeAdapter constructor arguments may only be other TypeAdapters",
+                e.element);
+      } catch (UnexpectedTypeArgumentsListException e) {
+        processingEnv.getMessager()
+            .printMessage(Diagnostic.Kind.ERROR,
+                "TypeAdapter "
+                + e.element
+                + " has an unexpected amount of type arguments. Found "
+                + e.typeArguments
+                + " but only expected "
+                + e.expected
+                + " type arguments.",
                 e.element);
       }
     }
@@ -188,7 +200,8 @@ public class ClassInfoParser {
       throws UnknownFieldTypeException, NonReadablePropertyException,
       NonWritablePropertyException, NoVisibleConstructorException,
       UnsatisfiableConstructorException, DuplicateFieldNameException,
-      InvalidConstructorException, TooManyConstructorsException {
+      InvalidTypeAdapterConstructorException, TooManyConstructorsException,
+      UnexpectedTypeArgumentsListException {
 
     ClassName className = ClassName.get(element);
     ClassName wrappedClassName = wrappers.get(className);
@@ -231,20 +244,11 @@ public class ClassInfoParser {
         String name = variable.getSimpleName().toString();
         TypeName typeName = TypeName.get(variable.asType());
 
-         //A field is considered "nullable" when it is a non-primitive and not annotated
-         //with @NonNull or @NotNull
-        boolean isPrimitive = variable.asType().getKind().isPrimitive();
-        //boolean annotatedWithNonNull = isFieldRequired(variableElementInfo.getterMethod)
-        //    || isFieldRequired(variable);
-        //boolean isNullable = !primitive && !annotatedWithNonNull;
-
-        AdapterInfo adapter = null;
-        if (!isPrimitive) {
-          try {
-            adapter = parseAdapterInfo(variable.asType(), variableScopedTypeAdapters);
-          } catch (UnknownTypeException e) {
-            throw new UnknownFieldTypeException(variable, e.unknownType);
-          }
+        AdapterInfo adapter;
+        try {
+          adapter = parseAdapterInfo(variable.asType(), variableScopedTypeAdapters);
+        } catch (UnknownTypeException e) {
+          throw new UnknownFieldTypeException(variable, e.unknownType);
         }
 
         String setterMethodName = null;
@@ -561,30 +565,39 @@ public class ClassInfoParser {
     }).first().orNull();
   }
 
-  private AdapterInfo parseAdapterInfo(TypeMirror type, Map<TypeName, String> scopedTypeAdapters)
+  private AdapterInfo parseAdapterInfo(TypeMirror field, Map<TypeName, String> scopedTypeAdapters)
       throws UnknownTypeException, TooManyConstructorsException,
-      InvalidConstructorException {
+      InvalidTypeAdapterConstructorException, UnexpectedTypeArgumentsListException {
 
-    if (type instanceof WildcardType) {
+    if (field.getKind().isPrimitive()) {
+      // Primitive types do not need adapters
+      return null;
+    }
+
+    if (field instanceof WildcardType) {
       // Wildcards are currently not supported
-      throw new UnknownTypeException(type);
+      throw new UnknownTypeException(field);
     }
 
     Types types = processingEnv.getTypeUtils();
     Elements elements = processingEnv.getElementUtils();
 
-    TypeMirror erasedType = types.erasure(type);
-    String elementName = scopedTypeAdapters.get(TypeName.get(erasedType));
-    if (elementName == null) {
-      throw new UnknownTypeException(erasedType);
+    TypeMirror rawType = types.erasure(field);
+    String typeAdapterClassName = scopedTypeAdapters.get(TypeName.get(rawType));
+    if (typeAdapterClassName == null) {
+      if (field instanceof ArrayType) {
+        // All array types default to use the default array adapter if a more specific one is
+        // not defined
+        TypeName objectArrayTypeName = ArrayTypeName.of(ClassName.get(Object.class));
+        typeAdapterClassName = scopedTypeAdapters.get(objectArrayTypeName);
+      } else {
+        throw new UnknownTypeException(rawType);
+      }
     }
-    TypeElement element = elements.getTypeElement(elementName);
-
-    TypeMirror typeAdapterType =
-        types.erasure(elements.getTypeElement(TypeAdapter.class.getName()).asType());
+    TypeElement typeAdapterElement = elements.getTypeElement(typeAdapterClassName);
 
     List<ExecutableElement> visibleTypeAdapterConstructors =
-        FluentIterable.from(constructorsIn(element.getEnclosedElements()))
+        FluentIterable.from(constructorsIn(typeAdapterElement.getEnclosedElements()))
             .filter(new Predicate<ExecutableElement>() {
               @Override public boolean apply(ExecutableElement input) {
                 return !input.getModifiers().contains(Modifier.PRIVATE);
@@ -598,54 +611,61 @@ public class ClassInfoParser {
             .toList();
 
     if (visibleTypeAdapterConstructors.size() > 1) {
-      throw new TooManyConstructorsException(element);
+      throw new TooManyConstructorsException(typeAdapterElement);
     }
 
     List<AdapterInfo> dependencies = new ArrayList<>();
-    ExecutableType constructorType = null;
-    TypeName adapterTypeName;
-    if (type instanceof DeclaredType) {
-      DeclaredType declaredType = MoreTypes.asDeclared(type);
-      List<? extends TypeMirror> typeArgumentsList = declaredType.getTypeArguments();
-      TypeMirror[] typeArgumentsArray = new TypeMirror[typeArgumentsList.size()];
-      typeArgumentsList.toArray(typeArgumentsArray);
-      DeclaredType declaredTypeAdapterType = types.getDeclaredType(element, typeArgumentsArray);
-      adapterTypeName = TypeName.get(declaredTypeAdapterType);
-      if (visibleTypeAdapterConstructors.size() > 0) {
-        ExecutableElement constructor = visibleTypeAdapterConstructors.get(0);
-        constructorType = (ExecutableType) types.asMemberOf(declaredTypeAdapterType, constructor);
+    DeclaredType declaredTypeAdapterType = MoreTypes.asDeclared(typeAdapterElement.asType());
+
+    int typeAdapterTypeArgumentsSize = declaredTypeAdapterType.getTypeArguments().size();
+    if (typeAdapterTypeArgumentsSize > 0) {
+      if (field instanceof DeclaredType) {
+        DeclaredType declaredFieldType = MoreTypes.asDeclared(field);
+        List<? extends TypeMirror> typeArgumentsList = declaredFieldType.getTypeArguments();
+        if (typeAdapterTypeArgumentsSize != typeArgumentsList.size()) {
+          throw new UnexpectedTypeArgumentsListException(typeAdapterElement,
+              typeArgumentsList, typeArgumentsList.size());
+        }
+        TypeMirror[] typeArgumentsArray = new TypeMirror[typeArgumentsList.size()];
+        typeArgumentsList.toArray(typeArgumentsArray);
+        declaredTypeAdapterType = types.getDeclaredType(typeAdapterElement, typeArgumentsArray);
+      } else if (field instanceof ArrayType) {
+        if (typeAdapterTypeArgumentsSize > 1) {
+          throw new UnexpectedTypeArgumentsListException(typeAdapterElement,
+              declaredTypeAdapterType.getTypeArguments(), 1);
+        }
+        ArrayType arrayFieldType = MoreTypes.asArray(field);
+        TypeMirror componentType = arrayFieldType.getComponentType();
+        declaredTypeAdapterType = types.getDeclaredType(typeAdapterElement, componentType);
+      } else {
+        throw new AssertionError("Unknown type kind " + field.getKind() + " from " + field);
       }
-    } else if (type instanceof ArrayType) {
-      adapterTypeName = TypeName.get(element.asType());
-      if (visibleTypeAdapterConstructors.size() > 0) {
-        ExecutableElement constructor = visibleTypeAdapterConstructors.get(0);
-        constructorType = MoreTypes.asExecutable(constructor.asType());
-      }
-    } else {
-      throw new AssertionError("Unknown type kind " + type.getKind() + " from " + type);
     }
 
-    if (constructorType != null) {
+    if (visibleTypeAdapterConstructors.size() > 0) {
       ExecutableElement constructor = visibleTypeAdapterConstructors.get(0);
+      ExecutableType constructorType =
+          (ExecutableType) types.asMemberOf(declaredTypeAdapterType, constructor);
       for (TypeMirror param : constructorType.getParameterTypes()) {
         TypeMirror erasedParamType = types.erasure(param);
-        if (!types.isAssignable(erasedParamType, typeAdapterType)) {
-          throw new InvalidConstructorException(constructor);
+        if (!types.isAssignable(erasedParamType,
+            types.erasure(elements.getTypeElement(TypeAdapter.class.getName()).asType()))) {
+          throw new InvalidTypeAdapterConstructorException(constructor);
         }
         List<? extends TypeMirror> typeAdapterArguments =
             getArgumentsOfClassFromType(types, param, TypeAdapter.class);
         if (typeAdapterArguments == null) {
-          throw new AssertionError("TypeAdapter should have a type argument: " + param);
+          throw new AssertionError("TypeAdapter should have a field argument: " + param);
         }
-        // TODO: add validation for number of type arguments! Don't allow raw types otherwise
-        // we crash here
+        // TODO: add validation for number of field arguments! Don't allow raw types otherwise
+        // TODO: we crash here
         dependencies.add(parseAdapterInfo(typeAdapterArguments.get(0), scopedTypeAdapters));
       }
     }
 
-    boolean singleton = isSingleton(types, element);
+    boolean singleton = isSingleton(types, typeAdapterElement);
 
-    return new AdapterInfo(dependencies, adapterTypeName, singleton);
+    return new AdapterInfo(dependencies, TypeName.get(declaredTypeAdapterType), singleton);
   }
 
   public static class DuplicateFieldNameException extends Exception {
@@ -716,11 +736,24 @@ public class ClassInfoParser {
     }
   }
 
-  public static class InvalidConstructorException extends Exception {
+  public static class InvalidTypeAdapterConstructorException extends Exception {
     final ExecutableElement element;
 
-    public InvalidConstructorException(ExecutableElement element) {
+    public InvalidTypeAdapterConstructorException(ExecutableElement element) {
       this.element = element;
+    }
+  }
+
+  public static class UnexpectedTypeArgumentsListException extends Exception {
+    final TypeElement element;
+    final List<? extends TypeMirror> typeArguments;
+    final int expected;
+
+    public UnexpectedTypeArgumentsListException(TypeElement element,
+        List<? extends TypeMirror> typeArguments, int expected) {
+      this.element = element;
+      this.typeArguments = typeArguments;
+      this.expected = expected;
     }
   }
 
@@ -731,7 +764,8 @@ public class ClassInfoParser {
     public final ExecutableElement setterMethod;
     public final int constructorIndex;
 
-    public VariableElementInfo(boolean visible, ExecutableElement getterMethod, VariableElement field) {
+    public VariableElementInfo(boolean visible, ExecutableElement getterMethod,
+        VariableElement field) {
       this(visible, getterMethod, field, null, -1);
     }
 
