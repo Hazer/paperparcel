@@ -26,6 +26,8 @@ import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
 import nz.bradcampbell.paperparcel.model.ClassInfo;
 import nz.bradcampbell.paperparcel.typeadapters.ArrayAdapter;
+import nz.bradcampbell.paperparcel.typeadapters.BigDecimalAdapter;
+import nz.bradcampbell.paperparcel.typeadapters.BigIntegerAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.BooleanAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.BooleanArrayAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.BundleAdapter;
@@ -105,6 +107,10 @@ public class PaperParcelProcessor extends AbstractProcessor {
           .add(QueueAdapter.class)
           .add(MapAdapter.class)
           .add(DateAdapter.class)
+
+          // Java math types
+          .add(BigIntegerAdapter.class)
+          .add(BigDecimalAdapter.class)
 
           // Android sdk types
           .add(BundleAdapter.class)
