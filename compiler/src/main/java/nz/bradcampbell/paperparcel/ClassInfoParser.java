@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.processing.ProcessingEnvironment;
+import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
@@ -46,7 +47,10 @@ import nz.bradcampbell.paperparcel.model.FieldInfo;
 import nz.bradcampbell.paperparcel.utils.AnnotationUtils;
 import nz.bradcampbell.paperparcel.utils.StringUtils;
 
+import static com.google.auto.common.MoreElements.asType;
 import static com.google.auto.common.MoreElements.getLocalAndInheritedMethods;
+import static com.google.auto.common.MoreTypes.asDeclared;
+import static java.util.Collections.singletonList;
 import static javax.lang.model.element.Modifier.STATIC;
 import static javax.lang.model.element.Modifier.TRANSIENT;
 import static javax.lang.model.util.ElementFilter.constructorsIn;
@@ -175,7 +179,7 @@ public class ClassInfoParser {
             .printMessage(Diagnostic.Kind.ERROR,
                 "TypeAdapters can only have one constructor",
                 e.element);
-      } catch (InvalidTypeAdapterConstructorException e) {
+      } catch (NonTypeAdapterParameterInTypeAdapterConstructorException e) {
         processingEnv.getMessager()
             .printMessage(Diagnostic.Kind.ERROR,
                 "TypeAdapter constructor arguments may only be other TypeAdapters",
@@ -186,10 +190,28 @@ public class ClassInfoParser {
                 "TypeAdapter "
                 + e.element
                 + " has an unexpected amount of type arguments. Found "
-                + e.typeArguments
-                + " but only expected "
-                + e.expected
-                + " type arguments.",
+                + (e.actual.size() == 0 ? "none" : e.actual)
+                + " but expected "
+                + (e.expected.size() == 0 ? "none" : e.expected)
+                + ".",
+                e.element);
+      } catch (FieldWithRawTypeException e) {
+        processingEnv.getMessager()
+            .printMessage(Diagnostic.Kind.ERROR,
+                "PaperParcel cannot process the field \""
+                    + e.element
+                    + "\" in "
+                    + element
+                    + " because it is a raw type.",
+                e.element);
+      } catch (RawTypeAdapterParameterInTypeAdapterConstructorException e) {
+        processingEnv.getMessager()
+            .printMessage(Diagnostic.Kind.ERROR,
+                "Invalid TypeAdapter constructor found in "
+                + e.adapter
+                + ". It declares \""
+                + e.param
+                + "\" as a raw type.",
                 e.element);
       }
     }
@@ -200,8 +222,9 @@ public class ClassInfoParser {
       throws UnknownFieldTypeException, NonReadablePropertyException,
       NonWritablePropertyException, NoVisibleConstructorException,
       UnsatisfiableConstructorException, DuplicateFieldNameException,
-      InvalidTypeAdapterConstructorException, TooManyConstructorsException,
-      UnexpectedTypeArgumentsListException {
+      NonTypeAdapterParameterInTypeAdapterConstructorException, TooManyConstructorsException,
+      UnexpectedTypeArgumentsListException, FieldWithRawTypeException,
+      RawTypeAdapterParameterInTypeAdapterConstructorException {
 
     ClassName className = ClassName.get(element);
     ClassName wrappedClassName = wrappers.get(className);
@@ -249,6 +272,8 @@ public class ClassInfoParser {
           adapter = parseAdapterInfo(variable.asType(), variableScopedTypeAdapters);
         } catch (UnknownTypeException e) {
           throw new UnknownFieldTypeException(variable, e.unknownType);
+        } catch (RawTypeException e) {
+          throw new FieldWithRawTypeException(variable, e.type);
         }
 
         String setterMethodName = null;
@@ -567,7 +592,9 @@ public class ClassInfoParser {
 
   private AdapterInfo parseAdapterInfo(TypeMirror field, Map<TypeName, String> scopedTypeAdapters)
       throws UnknownTypeException, TooManyConstructorsException,
-      InvalidTypeAdapterConstructorException, UnexpectedTypeArgumentsListException {
+      NonTypeAdapterParameterInTypeAdapterConstructorException,
+      UnexpectedTypeArgumentsListException,
+      RawTypeException, RawTypeAdapterParameterInTypeAdapterConstructorException {
 
     if (field.getKind().isPrimitive()) {
       // Primitive types do not need adapters
@@ -603,11 +630,6 @@ public class ClassInfoParser {
                 return !input.getModifiers().contains(Modifier.PRIVATE);
               }
             })
-            .filter(new Predicate<ExecutableElement>() {
-              @Override public boolean apply(ExecutableElement input) {
-                return input.getParameters().size() != 0;
-              }
-            })
             .toList();
 
     if (visibleTypeAdapterConstructors.size() > 1) {
@@ -615,52 +637,56 @@ public class ClassInfoParser {
     }
 
     List<AdapterInfo> dependencies = new ArrayList<>();
-    DeclaredType declaredTypeAdapterType = MoreTypes.asDeclared(typeAdapterElement.asType());
+    DeclaredType declaredTypeAdapterType = asDeclared(typeAdapterElement.asType());
 
     int typeAdapterTypeArgumentsSize = declaredTypeAdapterType.getTypeArguments().size();
-    if (typeAdapterTypeArgumentsSize > 0) {
-      if (field instanceof DeclaredType) {
-        DeclaredType declaredFieldType = MoreTypes.asDeclared(field);
-        List<? extends TypeMirror> typeArgumentsList = declaredFieldType.getTypeArguments();
-        if (typeAdapterTypeArgumentsSize != typeArgumentsList.size()) {
-          throw new UnexpectedTypeArgumentsListException(typeAdapterElement,
-              typeArgumentsList, typeArgumentsList.size());
-        }
-        TypeMirror[] typeArgumentsArray = new TypeMirror[typeArgumentsList.size()];
-        typeArgumentsList.toArray(typeArgumentsArray);
-        declaredTypeAdapterType = types.getDeclaredType(typeAdapterElement, typeArgumentsArray);
-      } else if (field instanceof ArrayType) {
-        if (typeAdapterTypeArgumentsSize > 1) {
-          throw new UnexpectedTypeArgumentsListException(typeAdapterElement,
-              declaredTypeAdapterType.getTypeArguments(), 1);
-        }
-        ArrayType arrayFieldType = MoreTypes.asArray(field);
+    if (field instanceof DeclaredType) {
+      DeclaredType declaredFieldType = asDeclared(field);
+      List<? extends TypeMirror> typeArgumentsList = declaredFieldType.getTypeArguments();
+      if (typeArgumentsList.size() !=
+          asType(types.asElement(field)).getTypeParameters().size()) {
+        throw new RawTypeException(field);
+      }
+      if (typeAdapterTypeArgumentsSize != typeArgumentsList.size()) {
+        throw new UnexpectedTypeArgumentsListException(typeAdapterElement,
+            asType(types.asElement(field)).getTypeParameters(),
+            asType(typeAdapterElement).getTypeParameters());
+      }
+      TypeMirror[] typeArgumentsArray = new TypeMirror[typeArgumentsList.size()];
+      typeArgumentsList.toArray(typeArgumentsArray);
+      declaredTypeAdapterType = types.getDeclaredType(typeAdapterElement, typeArgumentsArray);
+    } else if (field instanceof ArrayType) {
+      ArrayType arrayFieldType = MoreTypes.asArray(field);
+      if (typeAdapterTypeArgumentsSize > 1) {
+        throw new UnexpectedTypeArgumentsListException(typeAdapterElement,
+            singletonList(types.asElement(arrayFieldType.getComponentType())),
+            asType(typeAdapterElement).getTypeParameters());
+      } else if (typeAdapterTypeArgumentsSize == 1)  {
         TypeMirror componentType = arrayFieldType.getComponentType();
         declaredTypeAdapterType = types.getDeclaredType(typeAdapterElement, componentType);
-      } else {
-        throw new AssertionError("Unknown type kind " + field.getKind() + " from " + field);
       }
+    } else {
+      throw new AssertionError("Unknown type kind " + field.getKind() + " from " + field);
     }
 
-    if (visibleTypeAdapterConstructors.size() > 0) {
-      ExecutableElement constructor = visibleTypeAdapterConstructors.get(0);
-      ExecutableType constructorType =
-          (ExecutableType) types.asMemberOf(declaredTypeAdapterType, constructor);
-      for (TypeMirror param : constructorType.getParameterTypes()) {
-        TypeMirror erasedParamType = types.erasure(param);
-        if (!types.isAssignable(erasedParamType,
-            types.erasure(elements.getTypeElement(TypeAdapter.class.getName()).asType()))) {
-          throw new InvalidTypeAdapterConstructorException(constructor);
-        }
-        List<? extends TypeMirror> typeAdapterArguments =
-            getArgumentsOfClassFromType(types, param, TypeAdapter.class);
-        if (typeAdapterArguments == null) {
-          throw new AssertionError("TypeAdapter should have a field argument: " + param);
-        }
-        // TODO: add validation for number of field arguments! Don't allow raw types otherwise
-        // TODO: we crash here
-        dependencies.add(parseAdapterInfo(typeAdapterArguments.get(0), scopedTypeAdapters));
+    ExecutableElement constructor = visibleTypeAdapterConstructors.get(0);
+    ExecutableType constructorType =
+        (ExecutableType) types.asMemberOf(declaredTypeAdapterType, constructor);
+    for (TypeMirror param : constructorType.getParameterTypes()) {
+      TypeMirror erasedParamType = types.erasure(param);
+      // TODO: is this isAssignable going to be a problem with kotlin type adapters with the
+      // TODO: wildcards issue?
+      if (!types.isAssignable(erasedParamType,
+          types.erasure(elements.getTypeElement(TypeAdapter.class.getName()).asType()))) {
+        throw new NonTypeAdapterParameterInTypeAdapterConstructorException(constructor);
       }
+      List<? extends TypeMirror> typeAdapterArguments =
+          getArgumentsOfClassFromType(types, param, TypeAdapter.class);
+      if (typeAdapterArguments.size() == 0) {
+        throw new RawTypeAdapterParameterInTypeAdapterConstructorException(typeAdapterElement,
+            constructor, param);
+      }
+      dependencies.add(parseAdapterInfo(typeAdapterArguments.get(0), scopedTypeAdapters));
     }
 
     boolean singleton = isSingleton(types, typeAdapterElement);
@@ -736,24 +762,56 @@ public class ClassInfoParser {
     }
   }
 
-  public static class InvalidTypeAdapterConstructorException extends Exception {
+  public static class RawTypeException extends Exception {
+    final TypeMirror type;
+
+    public RawTypeException(TypeMirror type) {
+      this.type = type;
+    }
+  }
+
+  public static class FieldWithRawTypeException extends Exception {
+    final VariableElement element;
+    final TypeMirror type;
+
+    public FieldWithRawTypeException(VariableElement element, TypeMirror type) {
+      this.element = element;
+      this.type = type;
+    }
+  }
+
+  public static class NonTypeAdapterParameterInTypeAdapterConstructorException extends Exception {
     final ExecutableElement element;
 
-    public InvalidTypeAdapterConstructorException(ExecutableElement element) {
+    public NonTypeAdapterParameterInTypeAdapterConstructorException(ExecutableElement element) {
       this.element = element;
+    }
+  }
+
+  public static class RawTypeAdapterParameterInTypeAdapterConstructorException extends Exception {
+    final TypeElement adapter;
+    final ExecutableElement element;
+    final TypeMirror param;
+
+    public RawTypeAdapterParameterInTypeAdapterConstructorException(TypeElement adapter,
+        ExecutableElement element,
+        TypeMirror param) {
+      this.adapter = adapter;
+      this.element = element;
+      this.param = param;
     }
   }
 
   public static class UnexpectedTypeArgumentsListException extends Exception {
     final TypeElement element;
-    final List<? extends TypeMirror> typeArguments;
-    final int expected;
+    final List<? extends Element> expected;
+    final List<? extends Element> actual;
 
     public UnexpectedTypeArgumentsListException(TypeElement element,
-        List<? extends TypeMirror> typeArguments, int expected) {
+        List<? extends Element> expected, List<? extends Element> actual) {
       this.element = element;
-      this.typeArguments = typeArguments;
       this.expected = expected;
+      this.actual = actual;
     }
   }
 

@@ -284,6 +284,9 @@ public class PaperParcelAutoValueExtensionTests {
             "  public void writeToParcel(Date value, Parcel dest, int flags) {",
             "    dest.writeLong(value.getTime());",
             "  }",
+            "  public Date[] newArray(int length) {",
+            "    return new Date[length];",
+            "  }",
             "}"
         ));
 
