@@ -642,8 +642,8 @@ public class PaperParcelProcessorTests {
     assertAbout(javaSource()).that(source)
         .processedWith(new PaperParcelProcessor())
         .failsToCompile()
-        .withErrorContaining("PaperParcel requires at least one non-private constructor, but "
-            + "could not find one in test.Test")
+        .withErrorContaining("PaperParcel requires at least one non-private constructor to "
+            + "instantiate test.Test")
         .in(source)
         .onLine(6);
   }

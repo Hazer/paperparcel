@@ -12,8 +12,4 @@ object DateTypeAdapter : AbstractAdapter<Date>() {
   override fun read(source: Parcel): Date {
     return Date(source.readLong())
   }
-
-  override fun newArray(length: Int): Array<Date?> {
-    return arrayOfNulls(length)
-  }
 }

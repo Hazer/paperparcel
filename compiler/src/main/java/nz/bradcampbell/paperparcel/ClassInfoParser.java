@@ -151,9 +151,9 @@ public class ClassInfoParser {
       } catch (NoVisibleConstructorException e) {
         processingEnv.getMessager()
             .printMessage(Diagnostic.Kind.ERROR,
-                "PaperParcel requires at least one non-private constructor, but could not find "
-                    + "one in " + element.toString(),
-                element);
+                "PaperParcel requires at least one non-private constructor to instantiate "
+                    + e.typeElement,
+                e.typeElement);
       } catch (UnsatisfiableConstructorException e) {
         processingEnv.getMessager()
             .printMessage(Diagnostic.Kind.ERROR,
@@ -440,7 +440,7 @@ public class ClassInfoParser {
             });
 
     if (visibleConstructors.size() == 0) {
-      throw new NoVisibleConstructorException();
+      throw new NoVisibleConstructorException(typeElement);
     }
 
     // Main constructor being the constructor with the most parameters
@@ -667,7 +667,7 @@ public class ClassInfoParser {
   private Adapter parseAdapterInfo(AdapterType adapterType, Map<TypeName, String> scopedAdapters)
       throws TooManyConstructorsException, InvalidParameterInTypeAdapterConstructorException,
       RawParameterInTypeAdapterConstructorException, RawTypeException,
-      UnknownTypeException, UnexpectedTypeArgumentsListException {
+      UnknownTypeException, UnexpectedTypeArgumentsListException, NoVisibleConstructorException {
 
     if (adapterType == null) {
       return null;
@@ -697,47 +697,54 @@ public class ClassInfoParser {
 
     List<Object> dependencies = new ArrayList<>();
 
-    ExecutableElement constructor = visibleTypeAdapterConstructors.get(0);
-    ExecutableType constructorType =
-        (ExecutableType) types.asMemberOf(declaredTypeAdapterType, constructor);
+    if (visibleTypeAdapterConstructors.size() > 0) {
+      ExecutableElement constructor = visibleTypeAdapterConstructors.get(0);
+      ExecutableType constructorType =
+          (ExecutableType) types.asMemberOf(declaredTypeAdapterType, constructor);
 
-    TypeMirror rawTypeAdapterTypeMirror =
-        types.erasure(elements.getTypeElement(TypeAdapter.class.getName()).asType());
+      TypeMirror rawTypeAdapterTypeMirror =
+          types.erasure(elements.getTypeElement(TypeAdapter.class.getName()).asType());
 
-    for (TypeMirror param : constructorType.getParameterTypes()) {
-      if (types.isAssignable(types.erasure(param), rawTypeAdapterTypeMirror)) {
-        TypeName dependencyTypeName = TypeName.get(types.erasure(param));
-        String elementName = scopedAdapters.get(dependencyTypeName);
-        if (elementName != null) {
-          TypeElement dependencyTypeElement = elements.getTypeElement(elementName);
-          AdapterType dependency = new AdapterType(dependencyTypeElement, typeArgumentsArray);
-          dependencies.add(parseAdapterInfo(dependency, scopedAdapters));
-        } else {
-          List<? extends TypeMirror> typeAdapterArguments =
-              getArgumentsOfClassFromType(types, param, TypeAdapter.class.getName());
-          if (typeAdapterArguments.size() == 0) {
+      for (TypeMirror param : constructorType.getParameterTypes()) {
+        if (types.isAssignable(types.erasure(param), rawTypeAdapterTypeMirror)) {
+          TypeName dependencyTypeName = TypeName.get(types.erasure(param));
+          String elementName = scopedAdapters.get(dependencyTypeName);
+          if (elementName != null) {
+            TypeElement dependencyTypeElement = elements.getTypeElement(elementName);
+            AdapterType dependency = new AdapterType(dependencyTypeElement, typeArgumentsArray);
+            dependencies.add(parseAdapterInfo(dependency, scopedAdapters));
+          } else {
+            List<? extends TypeMirror> typeAdapterArguments =
+                getArgumentsOfClassFromType(types, param, TypeAdapter.class.getName());
+            if (typeAdapterArguments.size() == 0) {
+              throw new RawParameterInTypeAdapterConstructorException(typeAdapterElement,
+                  constructor, param);
+            }
+            AdapterType dependency =
+                getAdapterForField(typeAdapterArguments.get(0), scopedAdapters);
+            dependencies.add(parseAdapterInfo(dependency, scopedAdapters));
+          }
+        } else if (isTypeOf(Class.class, param)) {
+          TypeName typeName = TypeName.get(param);
+          List<? extends TypeMirror> typeArguments =
+              getArgumentsOfClassFromType(types, param, Class.class.getName());
+          if (typeArguments.size() == 0) {
             throw new RawParameterInTypeAdapterConstructorException(typeAdapterElement,
                 constructor, param);
           }
-          AdapterType dependency = getAdapterForField(typeAdapterArguments.get(0), scopedAdapters);
-          dependencies.add(parseAdapterInfo(dependency, scopedAdapters));
+          TypeName typeArgument = TypeName.get(typeArguments.get(0));
+          dependencies.add(new Clazz(typeName, typeArgument));
+        } else {
+          throw new InvalidParameterInTypeAdapterConstructorException(constructor);
         }
-      } else if (isTypeOf(Class.class, param)) {
-        TypeName typeName = TypeName.get(param);
-        List<? extends TypeMirror> typeArguments =
-            getArgumentsOfClassFromType(types, param, Class.class.getName());
-        if (typeArguments.size() == 0) {
-          throw new RawParameterInTypeAdapterConstructorException(typeAdapterElement,
-              constructor, param);
-        }
-        TypeName typeArgument = TypeName.get(typeArguments.get(0));
-        dependencies.add(new Clazz(typeName, typeArgument));
-      } else {
-        throw new InvalidParameterInTypeAdapterConstructorException(constructor);
       }
     }
 
     boolean singleton = isSingleton(types, typeAdapterElement);
+
+    if (visibleTypeAdapterConstructors.size() == 0 && !singleton) {
+      throw new NoVisibleConstructorException(typeAdapterElement);
+    }
 
     return new Adapter(dependencies, TypeName.get(declaredTypeAdapterType), singleton);
   }
@@ -795,6 +802,11 @@ public class ClassInfoParser {
   }
 
   public static class NoVisibleConstructorException extends Exception {
+    final TypeElement typeElement;
+
+    public NoVisibleConstructorException(TypeElement typeElement) {
+      this.typeElement = typeElement;
+    }
   }
 
   public static class UnknownFieldTypeException extends Exception {
