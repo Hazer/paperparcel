@@ -126,8 +126,7 @@ public class PaperParcelProcessor extends AbstractProcessor {
 
           .build();
 
-  // TODO: this might need to be a Set<String> due to https://bugs.openjdk.java.net/browse/JDK-8144105
-  private final Set<TypeElement> unprocessedTypes = new LinkedHashSet<>();
+  private final Set<String> unprocessedTypes = new LinkedHashSet<>();
 
   private final Map<ClassName, ClassName> wrappers = new LinkedHashMap<>();
   private final Map<ClassName, ClassName> delegates = new LinkedHashMap<>();
@@ -252,7 +251,7 @@ public class PaperParcelProcessor extends AbstractProcessor {
         continue;
       }
 
-      unprocessedTypes.add(typeElement);
+      unprocessedTypes.add(typeElement.toString());
 
       ClassName className = ClassName.get(typeElement);
 

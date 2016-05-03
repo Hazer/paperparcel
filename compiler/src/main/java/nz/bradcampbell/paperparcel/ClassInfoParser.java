@@ -82,10 +82,11 @@ public class ClassInfoParser {
     this.delegates = delegates;
   }
 
-  public Set<Model> parseModels(Set<TypeElement> unprocessedTypes, boolean isLastRound) {
+  public Set<Model> parseModels(Set<String> unprocessedTypes, boolean isLastRound) {
     Set<Model> models = new LinkedHashSet<>();
-    for (Iterator<TypeElement> iterator = unprocessedTypes.iterator(); iterator.hasNext(); ) {
-      TypeElement element = iterator.next();
+    for (Iterator<String> iterator = unprocessedTypes.iterator(); iterator.hasNext(); ) {
+      String elementName = iterator.next();
+      TypeElement element = processingEnv.getElementUtils().getTypeElement(elementName);
       Model model;
       try {
         model = parseClass(element);
@@ -700,11 +701,11 @@ public class ClassInfoParser {
     ExecutableType constructorType =
         (ExecutableType) types.asMemberOf(declaredTypeAdapterType, constructor);
 
+    TypeMirror rawTypeAdapterTypeMirror =
+        types.erasure(elements.getTypeElement(TypeAdapter.class.getName()).asType());
+
     for (TypeMirror param : constructorType.getParameterTypes()) {
-
-      // TODO: might have to iterate through superclasses here...
-      if (isTypeOf(TypeAdapter.class, param)) {
-
+      if (types.isAssignable(types.erasure(param), rawTypeAdapterTypeMirror)) {
         TypeName dependencyTypeName = TypeName.get(types.erasure(param));
         String elementName = scopedAdapters.get(dependencyTypeName);
         if (elementName != null) {
