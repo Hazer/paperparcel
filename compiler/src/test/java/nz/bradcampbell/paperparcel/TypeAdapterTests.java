@@ -501,7 +501,7 @@ public class TypeAdapterTests {
         .onLine(7);
   }
 
-  @Test public void failIfConstructorHasNonTypeAdapterParameter() throws Exception {
+  @Test public void failIfConstructorHasNonSupportedParameter() throws Exception {
     JavaFileObject source =
         JavaFileObjects.forSourceString("test.Test", Joiner.on('\n').join(
             "package test;",
@@ -551,7 +551,7 @@ public class TypeAdapterTests {
         .onLine(8);
   }
 
-  @Test public void failIfConstructorHasRawTypeAdapterParameter() throws Exception {
+  @Test public void failIfConstructorHasRawTypeParameter() throws Exception {
     JavaFileObject source =
         JavaFileObjects.forSourceString("test.Test", Joiner.on('\n').join(
             "package test;",
