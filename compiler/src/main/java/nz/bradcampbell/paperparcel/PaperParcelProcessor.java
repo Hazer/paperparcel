@@ -57,6 +57,7 @@ import nz.bradcampbell.paperparcel.typeadapters.ShortArrayAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.SizeAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.SizeFAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.SparseArrayAdapter;
+import nz.bradcampbell.paperparcel.typeadapters.SparseBooleanArrayAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.StringAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.StringArrayAdapter;
 
@@ -121,6 +122,7 @@ public class PaperParcelProcessor extends AbstractProcessor {
           .add(SizeFAdapter.class)
           .add(SizeAdapter.class)
           .add(SparseArrayAdapter.class)
+          .add(SparseBooleanArrayAdapter.class)
 
           .build();
 

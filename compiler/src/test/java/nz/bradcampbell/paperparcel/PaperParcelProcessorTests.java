@@ -20,6 +20,7 @@ public class PaperParcelProcessorTests {
             "import android.os.Parcelable;",
             "import android.os.PersistableBundle;",
             "import android.util.SparseArray;",
+            "import android.util.SparseBooleanArray;",
             "import android.util.Size;",
             "import android.util.SizeF;",
             "import java.util.List;",
@@ -70,6 +71,7 @@ public class PaperParcelProcessorTests {
             "  public String[] bk;",
             "  public BigInteger bl;",
             "  public BigDecimal bm;",
+            "  public SparseBooleanArray bn;",
             "}"
         ));
 
@@ -83,6 +85,7 @@ public class PaperParcelProcessorTests {
             "import android.util.Size;",
             "import android.util.SizeF;",
             "import android.util.SparseArray;",
+            "import android.util.SparseBooleanArray;",
             "import java.lang.Boolean;",
             "import java.lang.Byte;",
             "import java.lang.CharSequence;",
@@ -130,6 +133,7 @@ public class PaperParcelProcessorTests {
             "import nz.bradcampbell.paperparcel.typeadapters.SizeAdapter;",
             "import nz.bradcampbell.paperparcel.typeadapters.SizeFAdapter;",
             "import nz.bradcampbell.paperparcel.typeadapters.SparseArrayAdapter;",
+            "import nz.bradcampbell.paperparcel.typeadapters.SparseBooleanArrayAdapter;",
             "import nz.bradcampbell.paperparcel.typeadapters.StringAdapter;",
             "import nz.bradcampbell.paperparcel.typeadapters.StringArrayAdapter;",
             "public final class Test$$Wrapper implements ParcelableWrapper<Test> {",
@@ -167,6 +171,7 @@ public class PaperParcelProcessorTests {
             "      StringArrayAdapter stringArrayAdapter = new StringArrayAdapter();",
             "      BigIntegerAdapter bigIntegerAdapter = new BigIntegerAdapter(byteArrayAdapter);",
             "      BigDecimalAdapter bigDecimalAdapter = new BigDecimalAdapter(bigIntegerAdapter);",
+            "      SparseBooleanArrayAdapter sparseBooleanArrayAdapter = new SparseBooleanArrayAdapter();",
             "      boolean aa = in.readInt() == 1;",
             "      Boolean ab = booleanAdapter.readFromParcel(in);",
             "      byte ac = in.readByte();",
@@ -206,6 +211,7 @@ public class PaperParcelProcessorTests {
             "      String[] bk = stringArrayAdapter.readFromParcel(in);",
             "      BigInteger bl = bigIntegerAdapter.readFromParcel(in);",
             "      BigDecimal bm = bigDecimalAdapter.readFromParcel(in);",
+            "      SparseBooleanArray bn = sparseBooleanArrayAdapter.readFromParcel(in);",
             "      Test data = new Test();",
             "      data.aa = aa;",
             "      data.ab = ab;",
@@ -246,6 +252,7 @@ public class PaperParcelProcessorTests {
             "      data.bk = bk;",
             "      data.bl = bl;",
             "      data.bm = bm;",
+            "      data.bn = bn;",
             "      return new Test$$Wrapper(data);",
             "    }",
             "    @Override public Test$$Wrapper[] newArray(int size) {",
@@ -297,6 +304,7 @@ public class PaperParcelProcessorTests {
             "    StringArrayAdapter stringArrayAdapter = new StringArrayAdapter();",
             "    BigIntegerAdapter bigIntegerAdapter = new BigIntegerAdapter(byteArrayAdapter);",
             "    BigDecimalAdapter bigDecimalAdapter = new BigDecimalAdapter(bigIntegerAdapter);",
+            "    SparseBooleanArrayAdapter sparseBooleanArrayAdapter = new SparseBooleanArrayAdapter();",
             "    dest.writeInt(this.data.aa ? 1 : 0);",
             "    booleanAdapter.writeToParcel(this.data.ab, dest, flags);",
             "    dest.writeByte(this.data.ac);",
@@ -336,6 +344,7 @@ public class PaperParcelProcessorTests {
             "    stringArrayAdapter.writeToParcel(this.data.bk, dest, flags);",
             "    bigIntegerAdapter.writeToParcel(this.data.bl, dest, flags);",
             "    bigDecimalAdapter.writeToParcel(this.data.bm, dest, flags);",
+            "    sparseBooleanArrayAdapter.writeToParcel(this.data.bn, dest, flags);",
             "  }",
             "}"
         ));
