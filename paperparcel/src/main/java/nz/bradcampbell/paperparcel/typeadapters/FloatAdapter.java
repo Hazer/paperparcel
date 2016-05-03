@@ -13,8 +13,4 @@ public class FloatAdapter extends AbstractAdapter<Float> {
   protected void write(@NotNull Float value, @NotNull Parcel dest, int flags) {
     dest.writeFloat(value);
   }
-
-  @NotNull @Override public Float[] newArray(int length) {
-    return new Float[length];
-  }
 }

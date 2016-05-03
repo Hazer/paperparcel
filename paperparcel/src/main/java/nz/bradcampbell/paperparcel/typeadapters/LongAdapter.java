@@ -13,8 +13,4 @@ public final class LongAdapter extends AbstractAdapter<Long> {
   protected void write(@NotNull Long value, @NotNull Parcel dest, int flags) {
     dest.writeLong(value);
   }
-
-  @NotNull @Override public Long[] newArray(int length) {
-    return new Long[length];
-  }
 }

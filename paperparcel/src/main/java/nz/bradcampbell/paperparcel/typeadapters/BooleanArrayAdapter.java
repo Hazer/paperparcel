@@ -13,8 +13,4 @@ public class BooleanArrayAdapter extends AbstractAdapter<boolean[]> {
   protected void write(@NotNull boolean[] value, @NotNull Parcel dest, int flags) {
     dest.writeBooleanArray(value);
   }
-
-  @NotNull @Override public boolean[][] newArray(int length) {
-    return new boolean[length][];
-  }
 }

@@ -13,8 +13,4 @@ public class DoubleArrayAdapter extends AbstractAdapter<double[]> {
   protected void write(@NotNull double[] value, @NotNull Parcel dest, int flags) {
     dest.writeDoubleArray(value);
   }
-
-  @NotNull @Override public double[][] newArray(int length) {
-    return new double[length][];
-  }
 }

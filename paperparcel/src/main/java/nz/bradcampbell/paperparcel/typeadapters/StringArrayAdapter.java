@@ -13,8 +13,4 @@ public class StringArrayAdapter extends AbstractAdapter<String[]> {
   protected void write(@NotNull String[] value, @NotNull Parcel dest, int flags) {
     dest.writeStringArray(value);
   }
-
-  @NotNull @Override public String[][] newArray(int length) {
-    return new String[length][];
-  }
 }

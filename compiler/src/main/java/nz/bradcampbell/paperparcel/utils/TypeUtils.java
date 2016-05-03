@@ -41,15 +41,15 @@ public class TypeUtils {
   }
 
   public static List<? extends TypeMirror> getArgumentsOfClassFromType(Types types, TypeMirror type,
-      Class<?> clazz) {
-    if (types.erasure(type).toString().equals(clazz.getName())) {
+      String className) {
+    if (types.erasure(type).toString().equals(className)) {
       DeclaredType declaredType = (DeclaredType) type;
       return declaredType.getTypeArguments();
     }
     List<? extends TypeMirror> superTypes = types.directSupertypes(type);
     List<? extends TypeMirror> result = null;
     for (TypeMirror superType : superTypes) {
-      result = getArgumentsOfClassFromType(types, superType, clazz);
+      result = getArgumentsOfClassFromType(types, superType, className);
       if (result != null) break;
     }
     return result;

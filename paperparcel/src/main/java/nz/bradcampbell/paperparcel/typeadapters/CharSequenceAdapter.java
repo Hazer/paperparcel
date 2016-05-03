@@ -14,8 +14,4 @@ public class CharSequenceAdapter extends AbstractAdapter<CharSequence> {
   protected void write(@NotNull CharSequence value, @NotNull Parcel dest, int flags) {
     TextUtils.writeToParcel(value, dest, flags);
   }
-
-  @NotNull @Override public CharSequence[] newArray(int length) {
-    return new CharSequence[length];
-  }
 }

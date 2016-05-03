@@ -13,8 +13,4 @@ public class LongArrayAdapter extends AbstractAdapter<long[]> {
   protected void write(@NotNull long[] value, @NotNull Parcel dest, int flags) {
     dest.writeLongArray(value);
   }
-
-  @NotNull @Override public long[][] newArray(int length) {
-    return new long[length][];
-  }
 }

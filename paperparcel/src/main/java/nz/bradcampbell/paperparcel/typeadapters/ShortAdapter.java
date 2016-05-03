@@ -13,8 +13,4 @@ public final class ShortAdapter extends AbstractAdapter<Short> {
   protected void write(@NotNull Short value, @NotNull Parcel dest, int flags) {
     dest.writeInt(value);
   }
-
-  @NotNull @Override public Short[] newArray(int length) {
-    return new Short[length];
-  }
 }

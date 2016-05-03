@@ -13,8 +13,4 @@ public class ByteArrayAdapter extends AbstractAdapter<byte[]> {
   protected void write(@NotNull byte[] value, @NotNull Parcel dest, int flags) {
     dest.writeByteArray(value);
   }
-
-  @NotNull @Override public byte[][] newArray(int length) {
-    return new byte[length][];
-  }
 }

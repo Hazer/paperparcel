@@ -21,8 +21,4 @@ public class ShortArrayAdapter extends AbstractAdapter<short[]> {
       dest.writeInt((int) s);
     }
   }
-
-  @NotNull @Override public short[][] newArray(int length) {
-    return new short[length][];
-  }
 }

@@ -13,8 +13,4 @@ public class BooleanAdapter extends AbstractAdapter<Boolean> {
   protected void write(@NotNull Boolean value, @NotNull Parcel dest, int flags) {
     dest.writeInt(value ? 1 : 0);
   }
-
-  @NotNull @Override public Boolean[] newArray(int length) {
-    return new Boolean[length];
-  }
 }

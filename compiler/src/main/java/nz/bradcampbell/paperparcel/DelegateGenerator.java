@@ -9,7 +9,7 @@ import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
-import nz.bradcampbell.paperparcel.model.ClassInfo;
+import nz.bradcampbell.paperparcel.model.Model;
 
 import static javax.lang.model.element.Modifier.FINAL;
 import static javax.lang.model.element.Modifier.PUBLIC;
@@ -17,20 +17,20 @@ import static javax.lang.model.element.Modifier.PUBLIC;
 public class DelegateGenerator {
   private static final ClassName DELEGATE = ClassName.get(PaperParcels.Delegate.class);
 
-  public JavaFile generatePaperParcelsDelegate(ClassInfo classInfo) {
+  public JavaFile generatePaperParcelsDelegate(Model model) {
     AnnotationSpec suppressWarningsSpec = AnnotationSpec.builder(SuppressWarnings.class)
         .addMember("value", CodeBlock.of("$S", "unused"))
         .build();
-    TypeName delegateInterface = ParameterizedTypeName.get(DELEGATE, classInfo.getClassName(),
-        classInfo.getWrapperClassName());
-    TypeSpec delegateSpec = TypeSpec.classBuilder(classInfo.getDelegateClassName().simpleName())
+    TypeName delegateInterface = ParameterizedTypeName.get(DELEGATE, model.getClassName(),
+        model.getWrapperClassName());
+    TypeSpec delegateSpec = TypeSpec.classBuilder(model.getDelegateClassName().simpleName())
         .addAnnotation(suppressWarningsSpec)
         .addModifiers(PUBLIC, FINAL)
         .addSuperinterface(delegateInterface)
-        .addMethod(generateWrapMethod(classInfo.getClassName(), classInfo.getWrapperClassName()))
-        .addMethod(generateNewArrayMethod(classInfo.getClassName()))
+        .addMethod(generateWrapMethod(model.getClassName(), model.getWrapperClassName()))
+        .addMethod(generateNewArrayMethod(model.getClassName()))
         .build();
-    return JavaFile.builder(classInfo.getClassPackage(), delegateSpec).build();
+    return JavaFile.builder(model.getClassPackage(), delegateSpec).build();
   }
 
   private MethodSpec generateNewArrayMethod(ClassName className) {

@@ -31,8 +31,4 @@ public final class SparseArrayAdapter<T> extends AbstractAdapter<SparseArray<T>>
       itemAdapter.writeToParcel(value.get(key), dest, flags);
     }
   }
-
-  @SuppressWarnings("unchecked") @NotNull @Override public SparseArray<T>[] newArray(int length) {
-    return new SparseArray[length];
-  }
 }

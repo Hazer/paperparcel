@@ -13,8 +13,4 @@ public class BundleAdapter extends AbstractAdapter<Bundle> {
   @Override protected void write(@NotNull Bundle value, @NotNull Parcel dest, int flags) {
     dest.writeBundle(value);
   }
-
-  @NotNull @Override public Bundle[] newArray(int length) {
-    return new Bundle[length];
-  }
 }

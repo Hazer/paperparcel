@@ -14,8 +14,4 @@ public final class SizeFAdapter extends AbstractAdapter<SizeF> {
   protected void write(@NotNull SizeF value, @NotNull Parcel dest, int flags) {
     dest.writeSizeF(value);
   }
-
-  @NotNull @Override public SizeF[] newArray(int length) {
-    return new SizeF[length];
-  }
 }

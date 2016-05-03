@@ -13,8 +13,4 @@ public final class IntegerAdapter extends AbstractAdapter<Integer> {
   protected void write(@NotNull Integer value, @NotNull Parcel dest, int flags) {
     dest.writeInt(value);
   }
-
-  @NotNull @Override public Integer[] newArray(int length) {
-    return new Integer[length];
-  }
 }

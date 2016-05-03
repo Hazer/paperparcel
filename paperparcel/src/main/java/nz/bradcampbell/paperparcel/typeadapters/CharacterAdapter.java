@@ -13,8 +13,4 @@ public class CharacterAdapter extends AbstractAdapter<Character> {
   protected void write(@NotNull Character value, @NotNull Parcel dest, int flags) {
     dest.writeInt(value);
   }
-
-  @NotNull @Override public Character[] newArray(int length) {
-    return new Character[length];
-  }
 }

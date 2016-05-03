@@ -14,8 +14,4 @@ public class ParcelableAdapter extends AbstractAdapter<Parcelable> {
   protected void write(@NotNull Parcelable value, @NotNull Parcel dest, int flags) {
     dest.writeParcelable(value, flags);
   }
-
-  @NotNull @Override public Parcelable[] newArray(int length) {
-    return new Parcelable[length];
-  }
 }

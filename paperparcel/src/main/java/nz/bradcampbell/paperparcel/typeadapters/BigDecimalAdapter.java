@@ -23,8 +23,4 @@ public final class BigDecimalAdapter extends AbstractAdapter<BigDecimal> {
     bigIntegerAdapter.writeToParcel(value.unscaledValue(), dest, flags);
     dest.writeInt(value.scale());
   }
-
-  @NotNull @Override public BigDecimal[] newArray(int length) {
-    return new BigDecimal[length];
-  }
 }

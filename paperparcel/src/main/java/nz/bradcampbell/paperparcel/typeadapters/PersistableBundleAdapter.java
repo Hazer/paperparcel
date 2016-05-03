@@ -13,8 +13,4 @@ public class PersistableBundleAdapter extends AbstractAdapter<PersistableBundle>
   @Override protected void write(@NotNull PersistableBundle value, @NotNull Parcel dest, int flags) {
     dest.writePersistableBundle(value);
   }
-
-  @NotNull @Override public PersistableBundle[] newArray(int length) {
-    return new PersistableBundle[length];
-  }
 }

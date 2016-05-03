@@ -14,8 +14,4 @@ public final class DateAdapter extends AbstractAdapter<Date> {
   protected void write(@NotNull Date value, @NotNull Parcel dest, int flags) {
     dest.writeLong(value.getTime());
   }
-
-  @NotNull @Override public Date[] newArray(int length) {
-    return new Date[length];
-  }
 }

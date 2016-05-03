@@ -7,17 +7,16 @@ import java.util.List;
 /**
  * A model object that holds information needed to build a Parcelable data class wrapper
  */
-public final class ClassInfo {
+public final class Model {
   private final String classPackage;
-  private final List<FieldInfo> fields;
+  private final List<Field> fields;
   private final ClassName className;
   private final ClassName wrapperClassName;
   private final ClassName delegateClassName;
   private final boolean singleton;
 
-  public ClassInfo(String classPackage,
-      List<FieldInfo> fields, ClassName className, ClassName wrapperClassName,
-      ClassName delegateClassName, boolean singleton) {
+  public Model(String classPackage, List<Field> fields, ClassName className,
+      ClassName wrapperClassName, ClassName delegateClassName, boolean singleton) {
     this.classPackage = classPackage;
     this.fields = fields;
     this.className = className;
@@ -30,7 +29,7 @@ public final class ClassInfo {
     return classPackage;
   }
 
-  public List<FieldInfo> getFields() {
+  public List<Field> getFields() {
     return fields;
   }
 
@@ -53,13 +52,13 @@ public final class ClassInfo {
   @Override public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
-    ClassInfo classInfo = (ClassInfo) o;
-    return singleton == classInfo.singleton &&
-        Objects.equal(classPackage, classInfo.classPackage) &&
-        Objects.equal(fields, classInfo.fields) &&
-        Objects.equal(className, classInfo.className) &&
-        Objects.equal(wrapperClassName, classInfo.wrapperClassName) &&
-        Objects.equal(delegateClassName, classInfo.delegateClassName);
+    Model model = (Model) o;
+    return singleton == model.singleton &&
+        Objects.equal(classPackage, model.classPackage) &&
+        Objects.equal(fields, model.fields) &&
+        Objects.equal(className, model.className) &&
+        Objects.equal(wrapperClassName, model.wrapperClassName) &&
+        Objects.equal(delegateClassName, model.delegateClassName);
   }
 
   @Override public int hashCode() {

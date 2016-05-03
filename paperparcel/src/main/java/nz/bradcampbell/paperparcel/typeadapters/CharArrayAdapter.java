@@ -13,8 +13,4 @@ public class CharArrayAdapter extends AbstractAdapter<char[]> {
   protected void write(@NotNull char[] value, @NotNull Parcel dest, int flags) {
     dest.writeCharArray(value);
   }
-
-  @NotNull @Override public char[][] newArray(int length) {
-    return new char[length][];
-  }
 }

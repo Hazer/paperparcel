@@ -3,8 +3,8 @@ package nz.bradcampbell.paperparcel.model;
 import com.google.common.base.Objects;
 import com.squareup.javapoet.TypeName;
 
-public final class FieldInfo {
-  private final AdapterInfo adapterInfo;
+public final class Field {
+  private final Adapter adapter;
   private final TypeName typeName;
   private final String name;
   private final boolean isVisible;
@@ -12,9 +12,9 @@ public final class FieldInfo {
   private final String getterMethodName;
   private final String setterMethodName;
 
-  public FieldInfo(AdapterInfo adapterInfo, TypeName typeName, String name, boolean isVisible,
+  public Field(Adapter adapter, TypeName typeName, String name, boolean isVisible,
       int constructorPosition, String getterMethodName, String setterMethodName) {
-    this.adapterInfo = adapterInfo;
+    this.adapter = adapter;
     this.typeName = typeName;
     this.name = name;
     this.isVisible = isVisible;
@@ -23,8 +23,8 @@ public final class FieldInfo {
     this.setterMethodName = setterMethodName;
   }
 
-  public AdapterInfo getAdapterInfo() {
-    return adapterInfo;
+  public Adapter getAdapter() {
+    return adapter;
   }
 
   public TypeName getTypeName() {
@@ -54,18 +54,18 @@ public final class FieldInfo {
   @Override public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
-    FieldInfo fieldInfo = (FieldInfo) o;
-    return isVisible == fieldInfo.isVisible &&
-        constructorPosition == fieldInfo.constructorPosition &&
-        Objects.equal(adapterInfo, fieldInfo.adapterInfo) &&
-        Objects.equal(typeName, fieldInfo.typeName) &&
-        Objects.equal(name, fieldInfo.name) &&
-        Objects.equal(getterMethodName, fieldInfo.getterMethodName) &&
-        Objects.equal(setterMethodName, fieldInfo.setterMethodName);
+    Field field = (Field) o;
+    return isVisible == field.isVisible &&
+        constructorPosition == field.constructorPosition &&
+        Objects.equal(adapter, field.adapter) &&
+        Objects.equal(typeName, field.typeName) &&
+        Objects.equal(name, field.name) &&
+        Objects.equal(getterMethodName, field.getterMethodName) &&
+        Objects.equal(setterMethodName, field.setterMethodName);
   }
 
   @Override public int hashCode() {
-    return Objects.hashCode(adapterInfo, typeName, name, isVisible, constructorPosition,
+    return Objects.hashCode(adapter, typeName, name, isVisible, constructorPosition,
         getterMethodName, setterMethodName);
   }
 }

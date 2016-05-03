@@ -1,20 +1,19 @@
-package nz.bradcampbell.paperparcel.typeadapters;
+package nz.bradcampbell.paperparcel.typeadapters.base;
 
 import android.os.Parcel;
 import nz.bradcampbell.paperparcel.TypeAdapter;
-import nz.bradcampbell.paperparcel.typeadapters.base.AbstractAdapter;
 import org.jetbrains.annotations.NotNull;
 
-public class ArrayAdapter<T> extends AbstractAdapter<T[]> {
+public abstract class AbstractArrayAdapter<T> extends AbstractAdapter<T[]> {
   private final TypeAdapter<T> itemAdapter;
 
-  public ArrayAdapter(TypeAdapter<T> itemAdapter) {
+  public AbstractArrayAdapter(TypeAdapter<T> itemAdapter) {
     this.itemAdapter = itemAdapter;
   }
 
   @NotNull @Override protected T[] read(@NotNull Parcel source) {
     int length = source.readInt();
-    T[] value = itemAdapter.newArray(length);
+    T[] value = newArray(length);
     for (int i = 0; i < length; i++) {
       value[i] = itemAdapter.readFromParcel(source);
     }
@@ -28,7 +27,5 @@ public class ArrayAdapter<T> extends AbstractAdapter<T[]> {
     }
   }
 
-  @NotNull @Override public T[][] newArray(int length) {
-    throw new UnsupportedOperationException();
-  }
+  @NotNull protected abstract T[] newArray(int length);
 }

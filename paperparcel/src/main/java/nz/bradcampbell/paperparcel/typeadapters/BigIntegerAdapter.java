@@ -21,8 +21,4 @@ public final class BigIntegerAdapter extends AbstractAdapter<BigInteger> {
   protected void write(@NotNull BigInteger value, @NotNull Parcel dest, int flags) {
     byteArrayAdapter.writeToParcel(value.toByteArray(), dest, flags);
   }
-
-  @NotNull @Override public BigInteger[] newArray(int length) {
-    return new BigInteger[length];
-  }
 }

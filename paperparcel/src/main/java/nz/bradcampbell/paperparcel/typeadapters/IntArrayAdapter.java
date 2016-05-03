@@ -13,8 +13,4 @@ public class IntArrayAdapter extends AbstractAdapter<int[]> {
   protected void write(@NotNull int[] value, @NotNull Parcel dest, int flags) {
     dest.writeIntArray(value);
   }
-
-  @NotNull @Override public int[][] newArray(int length) {
-    return new int[length][];
-  }
 }

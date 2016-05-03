@@ -24,8 +24,7 @@ import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
-import nz.bradcampbell.paperparcel.model.ClassInfo;
-import nz.bradcampbell.paperparcel.typeadapters.ArrayAdapter;
+import nz.bradcampbell.paperparcel.model.Model;
 import nz.bradcampbell.paperparcel.typeadapters.BigDecimalAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.BigIntegerAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.BooleanAdapter;
@@ -39,6 +38,7 @@ import nz.bradcampbell.paperparcel.typeadapters.CharacterAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.DateAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.DoubleAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.DoubleArrayAdapter;
+import nz.bradcampbell.paperparcel.typeadapters.EnumAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.FloatAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.FloatArrayAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.IntArrayAdapter;
@@ -50,6 +50,7 @@ import nz.bradcampbell.paperparcel.typeadapters.MapAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.ParcelableAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.PersistableBundleAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.QueueAdapter;
+import nz.bradcampbell.paperparcel.typeadapters.ReflectArrayAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.SetAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.ShortAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.ShortArrayAdapter;
@@ -86,7 +87,7 @@ public class PaperParcelProcessor extends AbstractProcessor {
           .add(ShortAdapter.class)
 
           // Arrays
-          .add(ArrayAdapter.class)
+          .add(ReflectArrayAdapter.class)
           .add(BooleanArrayAdapter.class)
           .add(ByteArrayAdapter.class)
           .add(CharArrayAdapter.class)
@@ -99,6 +100,7 @@ public class PaperParcelProcessor extends AbstractProcessor {
 
           // Java language types
           .add(CharSequenceAdapter.class)
+          .add(EnumAdapter.class)
           .add(StringAdapter.class)
 
           // Java util types
@@ -172,14 +174,14 @@ public class PaperParcelProcessor extends AbstractProcessor {
     boolean isLastRound = roundEnvironment.processingOver();
 
     // Parse and generate wrappers
-    for (ClassInfo classInfo : classInfoParser.parseClasses(unprocessedTypes, isLastRound)) {
+    for (Model model : classInfoParser.parseModels(unprocessedTypes, isLastRound)) {
       try {
-        wrapperGenerator.generateParcelableWrapper(classInfo).writeTo(filer);
-        delegateGenerator.generatePaperParcelsDelegate(classInfo).writeTo(filer);
+        wrapperGenerator.generateParcelableWrapper(model).writeTo(filer);
+        delegateGenerator.generatePaperParcelsDelegate(model).writeTo(filer);
       } catch (IOException e) {
         processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
             "Could not write generated class "
-            + classInfo.getClassName()
+            + model.getClassName()
             + ": "
             + e);
       }
@@ -264,7 +266,7 @@ public class PaperParcelProcessor extends AbstractProcessor {
 
   private TypeName getTypeArgumentFromTypeAdapterType(TypeMirror type) {
     List<? extends TypeMirror> typeAdapterArguments = getArgumentsOfClassFromType(types, type,
-        TypeAdapter.class);
+        TypeAdapter.class.getName());
     if (typeAdapterArguments == null) {
       throw new AssertionError("TypeAdapter should have a type argument: " + type);
     }
