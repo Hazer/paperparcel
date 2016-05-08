@@ -446,57 +446,8 @@ public class TypeAdapterTests {
     assertAbout(javaSources()).that(asList(source, typeAdapter))
         .processedWith(new PaperParcelProcessor())
         .failsToCompile()
-        .withErrorContaining("TypeAdapter test.DateTypeAdapter has an unexpected amount of "
-            + "type arguments. Found T but expected none.")
-        .in(typeAdapter)
-        .onLine(7);
-  }
-
-  @Test public void failIfTypeAdapterForGenericTypeIsNotGeneric() throws Exception {
-    JavaFileObject source =
-        JavaFileObjects.forSourceString("test.Test", Joiner.on('\n').join(
-            "package test;",
-            "import nz.bradcampbell.paperparcel.TypeAdapters;",
-            "import nz.bradcampbell.paperparcel.PaperParcel;",
-            "import java.util.List;",
-            "import java.util.Date;",
-            "@PaperParcel",
-            "public final class Test {",
-            "  private final List<Date> child;",
-            "  public Test(List<Date> child) {",
-            "    this.child = child;",
-            "  }",
-            "  public List<Date> getChild() {",
-            "    return this.child;",
-            "  }",
-            "}"
-        ));
-
-    JavaFileObject typeAdapter =
-        JavaFileObjects.forSourceString("test.ListTypeAdapter", Joiner.on('\n').join(
-            "package test;",
-            "import nz.bradcampbell.paperparcel.DefaultAdapter;",
-            "import nz.bradcampbell.paperparcel.TypeAdapter;",
-            "import java.util.List;",
-            "import android.os.Parcel;",
-            "@DefaultAdapter",
-            "public class ListTypeAdapter implements TypeAdapter<List> {",
-            "  public List readFromParcel(Parcel in) {",
-            "    return null;",
-            "  }",
-            "  public void writeToParcel(List value, Parcel dest, int flags) {",
-            "  }",
-            "  public List[] newArray(int length) {",
-            "    return new List[length];",
-            "  }",
-            "}"
-        ));
-
-    assertAbout(javaSources()).that(asList(source, typeAdapter))
-        .processedWith(new PaperParcelProcessor())
-        .failsToCompile()
-        .withErrorContaining("TypeAdapter test.ListTypeAdapter has an unexpected amount of type"
-            + " arguments. Found none but expected E.")
+        .withErrorContaining("PaperParcel does not know what to do with the type argument T in "
+            + "test.DateTypeAdapter when processing java.util.Date")
         .in(typeAdapter)
         .onLine(7);
   }

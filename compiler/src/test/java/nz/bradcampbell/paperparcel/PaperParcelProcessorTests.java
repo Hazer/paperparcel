@@ -13,9 +13,26 @@ import static com.google.testing.compile.JavaSourcesSubjectFactory.javaSources;
 public class PaperParcelProcessorTests {
 
   @Test public void allBuiltInAdaptersTest() throws Exception {
+    JavaFileObject testParcelable =
+        JavaFileObjects.forSourceString("test.TestParcelable", Joiner.on('\n').join(
+            "package test;",
+            "import android.os.Parcel;",
+            "import android.os.Parcelable;",
+            "public class TestParcelable implements Parcelable {",
+            "  @Override",
+            "  public int describeContents() {",
+            "    return 0;",
+            "  }",
+            "  @Override",
+            "  public void writeToParcel(Parcel dest, int flags) {",
+            "  }",
+            "}"
+        ));
+
     JavaFileObject source =
         JavaFileObjects.forSourceString("test.Test", Joiner.on('\n').join(
             "package test;",
+            "import android.graphics.Bitmap;",
             "import android.os.Bundle;",
             "import android.os.Parcelable;",
             "import android.os.PersistableBundle;",
@@ -50,7 +67,7 @@ public class PaperParcelProcessorTests {
             "  public long ap;",
             "  public Long aq;",
             "  public Map<Integer, Integer> ar;",
-            "  public Parcelable as;",
+            "  public TestParcelable as;",
             "  public PersistableBundle at;",
             "  public Queue<Integer> au;",
             "  public Set<Integer> av;",
@@ -151,7 +168,7 @@ public class PaperParcelProcessorTests {
             "      FloatAdapter floatAdapter = new FloatAdapter();",
             "      LongAdapter longAdapter = new LongAdapter();",
             "      MapAdapter<Integer, Integer> integerIntegerMapAdapter = new MapAdapter<Integer, Integer>(integerAdapter, integerAdapter);",
-            "      ParcelableAdapter parcelableAdapter = new ParcelableAdapter();",
+            "      ParcelableAdapter<TestParcelable> testParcelableParcelableAdapter = new ParcelableAdapter<TestParcelable>();",
             "      PersistableBundleAdapter persistableBundleAdapter = new PersistableBundleAdapter();",
             "      QueueAdapter<Integer> integerQueueAdapter = new QueueAdapter<Integer>(integerAdapter);",
             "      SetAdapter<Integer> integerSetAdapter = new SetAdapter<Integer>(integerAdapter);",
@@ -190,7 +207,7 @@ public class PaperParcelProcessorTests {
             "      long ap = in.readLong();",
             "      Long aq = longAdapter.readFromParcel(in);",
             "      Map<Integer, Integer> ar = integerIntegerMapAdapter.readFromParcel(in);",
-            "      Parcelable as = parcelableAdapter.readFromParcel(in);",
+            "      TestParcelable as = testParcelableParcelableAdapter.readFromParcel(in);",
             "      PersistableBundle at = persistableBundleAdapter.readFromParcel(in);",
             "      Queue<Integer> au = integerQueueAdapter.readFromParcel(in);",
             "      Set<Integer> av = integerSetAdapter.readFromParcel(in);",
@@ -284,7 +301,7 @@ public class PaperParcelProcessorTests {
             "    FloatAdapter floatAdapter = new FloatAdapter();",
             "    LongAdapter longAdapter = new LongAdapter();",
             "    MapAdapter<Integer, Integer> integerIntegerMapAdapter = new MapAdapter<Integer, Integer>(integerAdapter, integerAdapter);",
-            "    ParcelableAdapter parcelableAdapter = new ParcelableAdapter();",
+            "    ParcelableAdapter<TestParcelable> testParcelableParcelableAdapter = new ParcelableAdapter<TestParcelable>();",
             "    PersistableBundleAdapter persistableBundleAdapter = new PersistableBundleAdapter();",
             "    QueueAdapter<Integer> integerQueueAdapter = new QueueAdapter<Integer>(integerAdapter);",
             "    SetAdapter<Integer> integerSetAdapter = new SetAdapter<Integer>(integerAdapter);",
@@ -323,7 +340,7 @@ public class PaperParcelProcessorTests {
             "    dest.writeLong(this.data.ap);",
             "    longAdapter.writeToParcel(this.data.aq, dest, flags);",
             "    integerIntegerMapAdapter.writeToParcel(this.data.ar, dest, flags);",
-            "    parcelableAdapter.writeToParcel(this.data.as, dest, flags);",
+            "    testParcelableParcelableAdapter.writeToParcel(this.data.as, dest, flags);",
             "    persistableBundleAdapter.writeToParcel(this.data.at, dest, flags);",
             "    integerQueueAdapter.writeToParcel(this.data.au, dest, flags);",
             "    integerSetAdapter.writeToParcel(this.data.av, dest, flags);",
@@ -349,7 +366,7 @@ public class PaperParcelProcessorTests {
             "}"
         ));
 
-    assertAbout(javaSource()).that(source)
+    assertAbout(javaSources()).that(Arrays.asList(source, testParcelable))
         .processedWith(new PaperParcelProcessor())
         .compilesWithoutError()
         .and()

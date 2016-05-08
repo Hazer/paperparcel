@@ -24,6 +24,7 @@ import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
 import javax.lang.model.type.TypeVisitor;
 import javax.lang.model.type.WildcardType;
+import javax.lang.model.util.Elements;
 import javax.lang.model.util.SimpleTypeVisitor6;
 import javax.lang.model.util.Types;
 
@@ -38,6 +39,12 @@ import static javax.lang.model.type.TypeKind.TYPEVAR;
 public class TypeUtils {
   private TypeUtils() {
     // No instances.
+  }
+
+  public static boolean isTypeOf(Types types, Elements elements, TypeMirror first,
+      Class<?> second) {
+    TypeMirror secondType = elements.getTypeElement(second.getName()).asType();
+    return types.isAssignable(types.erasure(first), types.erasure(secondType));
   }
 
   public static List<? extends TypeMirror> getArgumentsOfClassFromType(Types types, TypeMirror type,
