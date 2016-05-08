@@ -43,6 +43,7 @@ public class PaperParcelProcessorTests {
             "import java.util.List;",
             "import java.util.Map;",
             "import java.util.Set;",
+            "import java.util.UUID;",
             "import java.util.Queue;",
             "import java.math.BigInteger;",
             "import java.math.BigDecimal;",
@@ -89,6 +90,7 @@ public class PaperParcelProcessorTests {
             "  public BigInteger bl;",
             "  public BigDecimal bm;",
             "  public SparseBooleanArray bn;",
+            "  public UUID bo;",
             "}"
         ));
 
@@ -120,6 +122,7 @@ public class PaperParcelProcessorTests {
             "import java.util.Map;",
             "import java.util.Queue;",
             "import java.util.Set;",
+            "import java.util.UUID;",
             "import nz.bradcampbell.paperparcel.internal.ParcelableWrapper;",
             "import nz.bradcampbell.paperparcel.typeadapters.BigDecimalAdapter;",
             "import nz.bradcampbell.paperparcel.typeadapters.BigIntegerAdapter;",
@@ -153,6 +156,7 @@ public class PaperParcelProcessorTests {
             "import nz.bradcampbell.paperparcel.typeadapters.SparseBooleanArrayAdapter;",
             "import nz.bradcampbell.paperparcel.typeadapters.StringAdapter;",
             "import nz.bradcampbell.paperparcel.typeadapters.StringArrayAdapter;",
+            "import nz.bradcampbell.paperparcel.typeadapters.UuidAdapter;",
             "public final class Test$$Wrapper implements ParcelableWrapper<Test> {",
             "  public static final Parcelable.Creator<Test$$Wrapper> CREATOR = ",
             "      new Parcelable.Creator<Test$$Wrapper>() {",
@@ -189,6 +193,7 @@ public class PaperParcelProcessorTests {
             "      BigIntegerAdapter bigIntegerAdapter = new BigIntegerAdapter(byteArrayAdapter);",
             "      BigDecimalAdapter bigDecimalAdapter = new BigDecimalAdapter(bigIntegerAdapter);",
             "      SparseBooleanArrayAdapter sparseBooleanArrayAdapter = new SparseBooleanArrayAdapter();",
+            "      UuidAdapter uuidAdapter = new UuidAdapter();",
             "      boolean aa = in.readInt() == 1;",
             "      Boolean ab = booleanAdapter.readFromParcel(in);",
             "      byte ac = in.readByte();",
@@ -229,6 +234,7 @@ public class PaperParcelProcessorTests {
             "      BigInteger bl = bigIntegerAdapter.readFromParcel(in);",
             "      BigDecimal bm = bigDecimalAdapter.readFromParcel(in);",
             "      SparseBooleanArray bn = sparseBooleanArrayAdapter.readFromParcel(in);",
+            "      UUID bo = uuidAdapter.readFromParcel(in);",
             "      Test data = new Test();",
             "      data.aa = aa;",
             "      data.ab = ab;",
@@ -270,6 +276,7 @@ public class PaperParcelProcessorTests {
             "      data.bl = bl;",
             "      data.bm = bm;",
             "      data.bn = bn;",
+            "      data.bo = bo;",
             "      return new Test$$Wrapper(data);",
             "    }",
             "    @Override public Test$$Wrapper[] newArray(int size) {",
@@ -322,6 +329,7 @@ public class PaperParcelProcessorTests {
             "    BigIntegerAdapter bigIntegerAdapter = new BigIntegerAdapter(byteArrayAdapter);",
             "    BigDecimalAdapter bigDecimalAdapter = new BigDecimalAdapter(bigIntegerAdapter);",
             "    SparseBooleanArrayAdapter sparseBooleanArrayAdapter = new SparseBooleanArrayAdapter();",
+            "    UuidAdapter uuidAdapter = new UuidAdapter();",
             "    dest.writeInt(this.data.aa ? 1 : 0);",
             "    booleanAdapter.writeToParcel(this.data.ab, dest, flags);",
             "    dest.writeByte(this.data.ac);",
@@ -362,6 +370,7 @@ public class PaperParcelProcessorTests {
             "    bigIntegerAdapter.writeToParcel(this.data.bl, dest, flags);",
             "    bigDecimalAdapter.writeToParcel(this.data.bm, dest, flags);",
             "    sparseBooleanArrayAdapter.writeToParcel(this.data.bn, dest, flags);",
+            "    uuidAdapter.writeToParcel(this.data.bo, dest, flags);",
             "  }",
             "}"
         ));

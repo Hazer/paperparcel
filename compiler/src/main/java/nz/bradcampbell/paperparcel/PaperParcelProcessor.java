@@ -60,6 +60,7 @@ import nz.bradcampbell.paperparcel.typeadapters.SparseArrayAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.SparseBooleanArrayAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.StringAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.StringArrayAdapter;
+import nz.bradcampbell.paperparcel.typeadapters.UuidAdapter;
 
 import static nz.bradcampbell.paperparcel.PaperParcels.DELEGATE_SUFFIX;
 import static nz.bradcampbell.paperparcel.PaperParcels.WRAPPER_SUFFIX;
@@ -110,6 +111,7 @@ public class PaperParcelProcessor extends AbstractProcessor {
           .add(QueueAdapter.class)
           .add(MapAdapter.class)
           .add(DateAdapter.class)
+          .add(UuidAdapter.class)
 
           // Java math types
           .add(BigIntegerAdapter.class)
