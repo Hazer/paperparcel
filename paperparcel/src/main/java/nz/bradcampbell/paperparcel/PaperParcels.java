@@ -12,6 +12,7 @@ import nz.bradcampbell.paperparcel.internal.ParcelableWrapper;
 public final class PaperParcels {
   public static final String WRAPPER_SUFFIX = "$$Wrapper";
   public static final String DELEGATE_SUFFIX = "$$Delegate";
+  public static final String ADAPTER_SUFFIX = "$$Adapter";
 
   private static final Map<Class, Delegate> DELEGATES = new LinkedHashMap<>();
 

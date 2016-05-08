@@ -1,5 +1,6 @@
 package nz.bradcampbell.paperparcel;
 
+import com.google.auto.common.MoreElements;
 import com.google.auto.service.AutoService;
 import com.google.common.collect.ImmutableSet;
 import com.squareup.javapoet.ClassName;
@@ -62,6 +63,7 @@ import nz.bradcampbell.paperparcel.typeadapters.StringAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.StringArrayAdapter;
 import nz.bradcampbell.paperparcel.typeadapters.UuidAdapter;
 
+import static nz.bradcampbell.paperparcel.PaperParcels.ADAPTER_SUFFIX;
 import static nz.bradcampbell.paperparcel.PaperParcels.DELEGATE_SUFFIX;
 import static nz.bradcampbell.paperparcel.PaperParcels.WRAPPER_SUFFIX;
 import static nz.bradcampbell.paperparcel.utils.TypeUtils.getArgumentsOfClassFromType;
@@ -135,6 +137,7 @@ public class PaperParcelProcessor extends AbstractProcessor {
   private final Map<TypeName, String> adapters = new LinkedHashMap<>();
 
   private final WrapperGenerator wrapperGenerator = new WrapperGenerator();
+  private final WrapperAdapterGenerator wrapperAdapterGenerator = new WrapperAdapterGenerator();
   private final DelegateGenerator delegateGenerator = new DelegateGenerator();
 
   private Filer filer;
@@ -171,9 +174,48 @@ public class PaperParcelProcessor extends AbstractProcessor {
 
   @Override public boolean process(Set<? extends TypeElement> annotations,
       RoundEnvironment roundEnvironment) {
-    findDefaultAdapters(roundEnvironment);
-    findPaperParcels(roundEnvironment);
 
+    // Find all global-scoped TypeAdapters and add them to the adapter map
+    for (TypeElement element : findDefaultAdapters(roundEnvironment)) {
+      TypeName typeArgumentTypeName = getTypeArgumentFromTypeAdapterType(element.asType());
+      adapters.put(typeArgumentTypeName, element.toString());
+    }
+
+    // Find all PaperParcel types and generate a global-scoped TypeAdapter for
+    // that type
+    Set<TypeElement> newPaperParcels = findPaperParcels(roundEnvironment);
+    for (TypeElement element : newPaperParcels) {
+      ClassName className = ClassName.get(element);
+
+      unprocessedTypes.add(element.toString());
+
+      ClassName wrapperName =
+          ClassName.get(className.packageName(), className.simpleName() + WRAPPER_SUFFIX);
+      wrappers.put(className, wrapperName);
+
+      ClassName delegateName =
+          ClassName.get(className.packageName(), className.simpleName() + DELEGATE_SUFFIX);
+      delegates.put(className, delegateName);
+
+      try {
+        wrapperAdapterGenerator.generateWrapperAdapter(className.packageName(),
+            className.simpleName() + ADAPTER_SUFFIX, className, wrapperName).writeTo(filer);
+      } catch (IOException e) {
+        processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
+            "An exception occurred while writing to filer: " + e);
+      }
+    }
+    if (newPaperParcels.size() != 0) {
+      // A new TypeAdapter was generated this round for the @PaperParcel type. Wait til the next
+      // processing round to process this type as the Adapter TypeElement will be accessible
+      return true;
+    }
+
+    // TODO:
+    // I would like to remove this if possible. It's currently needed because the order
+    // of the AutoValue processor and my processor can't be determined. If my processor runs
+    // first, some PaperParcel types may not exist yet. Hence the parser would throw
+    // "unknown type" errors prematurely
     boolean isLastRound = roundEnvironment.processingOver();
 
     // Parse and generate wrappers
@@ -183,17 +225,16 @@ public class PaperParcelProcessor extends AbstractProcessor {
         delegateGenerator.generatePaperParcelsDelegate(model).writeTo(filer);
       } catch (IOException e) {
         processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
-            "Could not write generated class "
-            + model.getClassName()
-            + ": "
-            + e);
+            "An exception occurred while writing to filer: " + e);;
       }
     }
 
     return true;
   }
 
-  private void findDefaultAdapters(RoundEnvironment roundEnvironment) {
+  private Set<TypeElement> findDefaultAdapters(RoundEnvironment roundEnvironment) {
+    Set<TypeElement> newDefaultAdapters = new LinkedHashSet<>();
+
     for (Element element : roundEnvironment.getElementsAnnotatedWith(DefaultAdapter.class)) {
 
       // Ensure we are dealing with a TypeAdapter
@@ -222,12 +263,15 @@ public class PaperParcelProcessor extends AbstractProcessor {
         continue;
       }
 
-      TypeName typeArgumentTypeName = getTypeArgumentFromTypeAdapterType(element.asType());
-      adapters.put(typeArgumentTypeName, element.toString());
+      newDefaultAdapters.add(MoreElements.asType(element));
     }
+
+    return newDefaultAdapters;
   }
 
-  private void findPaperParcels(RoundEnvironment roundEnvironment) {
+  private Set<TypeElement> findPaperParcels(RoundEnvironment roundEnvironment) {
+    Set<TypeElement> newPaperParcels = new LinkedHashSet<>();
+
     for (Element element : roundEnvironment.getElementsAnnotatedWith(PaperParcel.class)) {
       TypeElement typeElement = (TypeElement) element;
 
@@ -253,18 +297,10 @@ public class PaperParcelProcessor extends AbstractProcessor {
         continue;
       }
 
-      unprocessedTypes.add(typeElement.toString());
-
-      ClassName className = ClassName.get(typeElement);
-
-      ClassName wrapperName =
-          ClassName.get(className.packageName(), className.simpleName() + WRAPPER_SUFFIX);
-      wrappers.put(className, wrapperName);
-
-      ClassName delegateName =
-          ClassName.get(className.packageName(), className.simpleName() + DELEGATE_SUFFIX);
-      delegates.put(className, delegateName);
+      newPaperParcels.add(typeElement);
     }
+
+    return newPaperParcels;
   }
 
   private TypeName getTypeArgumentFromTypeAdapterType(TypeMirror type) {
