@@ -547,8 +547,8 @@ public class TypeAdapterTests {
     assertAbout(javaSources()).that(asList(source, typeAdapter))
         .processedWith(new PaperParcelProcessor())
         .failsToCompile()
-        .withErrorContaining("Invalid TypeAdapter constructor found in test.ListTypeAdapter. It "
-            + "declares \"nz.bradcampbell.paperparcel.TypeAdapter\" as a raw type.")
+        .withErrorContaining("PaperParcel cannot process constructor found in test.ListTypeAdapter "
+            + "because \"nz.bradcampbell.paperparcel.TypeAdapter\" can't be declared as a raw type.")
         .in(typeAdapter)
         .onLine(8);
   }

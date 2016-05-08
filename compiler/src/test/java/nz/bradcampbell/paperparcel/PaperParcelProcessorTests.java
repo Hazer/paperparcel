@@ -765,7 +765,7 @@ public class PaperParcelProcessorTests {
         .processedWith(new PaperParcelProcessor())
         .failsToCompile()
         .withErrorContaining("PaperParcel cannot process the field \"child\" in test.Test "
-            + "because it is a raw type.")
+            + "because java.util.List can't be declared as a raw type.")
         .in(source)
         .onLine(6);
   }

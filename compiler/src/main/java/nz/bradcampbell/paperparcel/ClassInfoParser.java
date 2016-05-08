@@ -207,16 +207,18 @@ public class ClassInfoParser {
                     + e.element
                     + "\" in "
                     + element
-                    + " because it is a raw type.",
+                    + " because "
+                    + e.type
+                    + " can't be declared as a raw type.",
                 e.element);
       } catch (RawParameterInTypeAdapterConstructorException e) {
         processingEnv.getMessager()
             .printMessage(Diagnostic.Kind.ERROR,
-                "Invalid TypeAdapter constructor found in "
+                "PaperParcel cannot process constructor found in "
                 + e.adapter
-                + ". It declares \""
+                + " because \""
                 + e.param
-                + "\" as a raw type.",
+                + "\" can't be declared as a raw type.",
                 e.element);
       } catch (Throwable throwable) {
         throw new AssertionError("Unhandled exception.", throwable);
