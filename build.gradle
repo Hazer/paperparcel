@@ -31,18 +31,18 @@ project.plugins.whenPluginAdded { plugin ->
     }
 }
 
-ext.kotlin_version = '1.0.1-2'
+ext.kotlin_version = '1.0.3'
 
 ext.deps = [
     // Intellij
     intellijAnnotations: 'com.intellij:annotations:+@jar',
 
     // Android
-    appCompat: 'com.android.support:appcompat-v7:23.1.1',
-    design: 'com.android.support:design:23.1.1',
+    appCompat: 'com.android.support:appcompat-v7:24.0.0',
+    design: 'com.android.support:design:24.0.0',
 
     // Square
-    javapoet: 'com.squareup:javapoet:1.6.1',
+    javapoet: 'com.squareup:javapoet:1.7.0',
 
     // Auto
     autovalue: 'com.google.auto.value:auto-value:1.2',
